@@ -10,13 +10,6 @@ extern void determine_begin_timestamp(char *trace_name, char begin_timestamp[], 
 
 extern void calculate_caso_chunk_num(char *trace_name, char begin_timestamp[]);
 
-extern void calculate_relevance_chunk_num(char* trace_name,  int* total_access, int* total_access_index, int* num_chunk_per_timestamp, 
-	int *mark_relevant_access_table, int time_range, int* sort_caso_rcd_pattern, int* sort_caso_rcd_index);
-
-extern void calculate_relevance_degree(char *trace_name, int *mark_relevant_access_table, int *caso_relevant_set, int *caso_relevant_degree, 
-	int *total_access, int *total_access_index, int *total_access_caso_rele_index, int *num_chunk_per_timestamp, int *relevant_chunks_table, int caso_num_rele_chunks, 
-	int begin_timestamp_num);
-
 extern int calculate_priority(int *stripe_map, int cur_chunk_num, int *temp_stripe_idx_in_rele_chunk_table, int *caso_relevant_set, int *caso_relevant_degree,  
                                       int candidate_chunk_index, int *relevant_chunks_table, int caso_num_rele_chunks);
 

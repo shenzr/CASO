@@ -3,11 +3,14 @@
 
 #define inf 999999999
 #define max_aces_blk_num 50000000
-#define num_blk_per_aces 100000
+#define num_blk_per_aces 1000000
+#define max_num_peer_chunks 1000  // we call the chunks that are accessed within a timestamp peer chunks
+#define num_assume_timestamp 100000
+#define bucket_depth 20
 
 #define block_size 4096
-#define erasure_k 6
-#define erasure_m 3
+#define erasure_k 4
+#define erasure_m 2
 #define erasure_w 8
 
 #define contiguous_block 1024*16 // it defines the number of blocks in a column of a stripe under contiguous data placement
@@ -16,7 +19,7 @@
 
 #define debug 1
 
-#define max_num_relevent_chunks_per_chunk 10000 // it defines the maximum number of relevant chunks to a chunk
+#define max_num_relevent_chunks_per_chunk 40 // it defines the maximum number of relevant chunks to a chunk
 
 int max_access_chunks_per_timestamp;
 int total_num_req;
