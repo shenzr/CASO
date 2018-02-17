@@ -1,4 +1,5 @@
 #define _GNU_SOURCE 
+#define __USE_LARGEFILE64
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -10,10 +11,13 @@
 #include "common.h"
 #include "general.h"
 
+#define chunk_size_kb_unit block_size/1024
+#define disk_capacity 1024*1024*100
+
 int main(int argc, char *argv[]){
 
-  if(argc!=3){
-  	printf("./s trace_name begin_stripe_ratio !\n");
+  if(argc!=4){
+  	printf("./s trace_name begin_stripe_ratio code_type!\n");
 	exit(1);
   	}
 
@@ -25,9 +29,14 @@ int main(int argc, char *argv[]){
   int begin_timestamp_num;
   int striping_io_count;
   int contiguous_io_count;
+  int temp_chunk_size_kb=chunk_size_kb_unit;
+  int temp_erasure_k=erasure_k;
+  double begin_stripe_ratio; 
+  
   struct timeval bg_tm, ed_tm;
 
-  double begin_stripe_ratio=atoi(argv[2])*1.0/100;
+  begin_stripe_ratio=atoi(argv[2])*1.0/100;
+  strcpy(code_type, argv[3]);
 
   cur_rcd_idx=0;
   total_access_chunk_num=0;
@@ -76,6 +85,13 @@ int main(int argc, char *argv[]){
   int min_access_chunk=sort_trace_pattern[cur_rcd_idx-1];
   int start_striping_chunk=min_access_chunk/erasure_k*erasure_k;
 
+  printf("max_access_chunk/temp_erasure_k=%d, disk_capacity=%d\n", max_access_chunk/temp_erasure_k, disk_capacity/temp_chunk_size_kb);
+
+  if(max_access_chunk/temp_erasure_k > disk_capacity){
+	  printf("max_access_chunk exceeds disk_capacity!, max_access_chunk=%d, disk_capacity=%d\n", max_access_chunk/temp_erasure_k, disk_capacity);
+	  exit(1);
+  	}
+
   // calculate the extra partial stripe writes in sequential stripe
   striping_io_count=calculate_psw_io_striping_stripe(argv[1], begin_timestamp); // i.e., organizing the data by following horizontal data placement
   contiguous_io_count=calculate_psw_io_continugous_stripe(argv[1], begin_timestamp, max_access_chunk); // i.e., organizing the data by following vertical data placement
@@ -92,6 +108,7 @@ int main(int argc, char *argv[]){
   int *sort_caso_rcd_index=(int*)malloc(sizeof(int)*caso_rcd_idx);
   int *chunk_to_stripe_map=(int*)malloc(sizeof(int)*cur_rcd_idx); // it records the stripe id for each chunk
   int *chunk_to_stripe_chunk_map=(int*)malloc(sizeof(int)*cur_rcd_idx); // it records the chunk id in the stripe for each chunk
+  int *chunk_to_local_group_map=(int*)malloc(sizeof(int)*cur_rcd_idx); // it records which local group a chunk is organized at
 
   for(i=0; i<caso_rcd_idx; i++)
   	sort_caso_rcd_pattern[i]=trace_access_pattern[i];
@@ -102,7 +119,8 @@ int main(int argc, char *argv[]){
   QuickSort_index(sort_caso_rcd_pattern, sort_caso_rcd_index, 0, caso_rcd_idx-1);
 
   gettimeofday(&bg_tm, NULL);
-  caso_stripe_ognztn(argv[1], analyze_chunks_time_slots, num_chunk_per_timestamp, begin_timestamp_num, sort_caso_rcd_pattern, sort_caso_rcd_index, chunk_to_stripe_map, chunk_to_stripe_chunk_map);
+  caso_stripe_ognztn(argv[1], analyze_chunks_time_slots, num_chunk_per_timestamp, begin_timestamp_num, sort_caso_rcd_pattern, sort_caso_rcd_index, 
+  					chunk_to_stripe_map, chunk_to_stripe_chunk_map, chunk_to_local_group_map);
   gettimeofday(&ed_tm, NULL);
 
   printf("caso_analyze_time=%.2lf\n", ed_tm.tv_sec-bg_tm.tv_sec+(ed_tm.tv_usec-bg_tm.tv_usec)*1.0/1000000);
@@ -125,7 +143,6 @@ int main(int argc, char *argv[]){
   printf("caso_psw_io=%d, striping_io_count=%d, contiguous_io_count=%d\n", caso_psw_io, striping_io_count, contiguous_io_count);
   printf("caso_time=%.2lf, striping_time=%.2lf, continugous_time=%.2lf\n", *caso_time, *striping_time, *continugous_time);
 
-
   free(chunk_to_stripe_map);
   free(chunk_to_stripe_chunk_map);
   free(num_chunk_per_timestamp);
@@ -133,6 +150,7 @@ int main(int argc, char *argv[]){
   free(sort_caso_rcd_pattern);
   free(sort_caso_rcd_index);
   free(access_time_slots_index);
+  free(chunk_to_local_group_map);
 
   return 0;
 
