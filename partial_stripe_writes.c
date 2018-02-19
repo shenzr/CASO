@@ -32,6 +32,7 @@ int main(int argc, char *argv[]){
   int temp_chunk_size_kb=chunk_size_kb_unit;
   int temp_erasure_k=erasure_k;
   double begin_stripe_ratio; 
+  int caso_psw_io;
   
   struct timeval bg_tm, ed_tm;
 
@@ -119,14 +120,16 @@ int main(int argc, char *argv[]){
   QuickSort_index(sort_caso_rcd_pattern, sort_caso_rcd_index, 0, caso_rcd_idx-1);
 
   gettimeofday(&bg_tm, NULL);
+
   caso_stripe_ognztn(argv[1], analyze_chunks_time_slots, num_chunk_per_timestamp, begin_timestamp_num, sort_caso_rcd_pattern, sort_caso_rcd_index, 
-  					chunk_to_stripe_map, chunk_to_stripe_chunk_map, chunk_to_local_group_map);
+  				chunk_to_stripe_map, chunk_to_stripe_chunk_map, chunk_to_local_group_map);
+
   gettimeofday(&ed_tm, NULL);
 
   printf("caso_analyze_time=%.2lf\n", ed_tm.tv_sec-bg_tm.tv_sec+(ed_tm.tv_usec-bg_tm.tv_usec)*1.0/1000000);
   num_stripe=(max_access_chunk-start_striping_chunk)/(block_size*erasure_k);
 
-  int caso_psw_io=calculate_psw_io_caso_stripe(argv[1], begin_timestamp, chunk_to_stripe_map); 
+  caso_psw_io=calculate_psw_io_caso_stripe(argv[1], begin_timestamp, chunk_to_stripe_map, chunk_to_local_group_map); 
   //printf("caso_psw_io=%d\n", caso_psw_io);
 
   double *caso_time, *striping_time, *continugous_time;
@@ -136,9 +139,9 @@ int main(int argc, char *argv[]){
   striping_time=&g;
   continugous_time=&h; 
 
-  psw_time_caso(argv[1],begin_timestamp, chunk_to_stripe_map, chunk_to_stripe_chunk_map,caso_time);
-  psw_time_striping(argv[1], begin_timestamp,striping_time);
-  psw_time_continugous(argv[1], begin_timestamp,continugous_time);
+  psw_time_caso(argv[1],begin_timestamp, chunk_to_stripe_map, chunk_to_stripe_chunk_map, caso_time, chunk_to_local_group_map);
+  psw_time_striping(argv[1], begin_timestamp, striping_time, chunk_to_local_group_map);
+  psw_time_continugous(argv[1], begin_timestamp,continugous_time, chunk_to_local_group_map);
 
   printf("caso_psw_io=%d, striping_io_count=%d, contiguous_io_count=%d\n", caso_psw_io, striping_io_count, contiguous_io_count);
   printf("caso_time=%.2lf, striping_time=%.2lf, continugous_time=%.2lf\n", *caso_time, *striping_time, *continugous_time);
