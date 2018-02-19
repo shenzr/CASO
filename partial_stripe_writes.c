@@ -129,9 +129,6 @@ int main(int argc, char *argv[]){
   printf("caso_analyze_time=%.2lf\n", ed_tm.tv_sec-bg_tm.tv_sec+(ed_tm.tv_usec-bg_tm.tv_usec)*1.0/1000000);
   num_stripe=(max_access_chunk-start_striping_chunk)/(block_size*erasure_k);
 
-  caso_psw_io=calculate_psw_io_caso_stripe(argv[1], begin_timestamp, chunk_to_stripe_map, chunk_to_local_group_map); 
-  //printf("caso_psw_io=%d\n", caso_psw_io);
-
   double *caso_time, *striping_time, *continugous_time;
   double f=0, g=0, h=0;
   

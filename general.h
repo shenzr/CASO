@@ -17,12 +17,6 @@ extern void quick_sort_value(int *data, int left, int right);
 
 extern void QuickSort_index(int *data, int index[],int left, int right);
 
-extern int calculate_psw_io_striping_stripe(char *trace_name, char given_timestamp[]);
-
-extern int calculate_psw_io_caso_stripe(char *trace_name, char given_timestamp[], int *chunk_to_stripe_map);
-
-extern int calculate_psw_io_continugous_stripe(char *trace_name, char given_timestamp[], int max_access_block);
-
 extern int calculate_chunk_num_io_matrix(int *io_matrix, int len, int width);
 
 extern void stripe_organization(int *relevant_chunks_table, int *caso_relevant_set, int *caso_relevant_degree,  
@@ -31,11 +25,11 @@ extern void stripe_organization(int *relevant_chunks_table, int *caso_relevant_s
 extern void system_partial_stripe_writes(int *io_matrix, int *accessed_stripes, int stripe_count, int *total_write_block_num);
 
 extern int psw_time_caso(char *trace_name, char given_timestamp[], int *chunk_to_stripe_map, 
-	int *chunk_to_stripe_chunk_map, double *time);
+	int *chunk_to_stripe_chunk_map, double *time, int* chunk_to_local_group_map);
 
-extern int psw_time_striping(char *trace_name, char given_timestamp[], double *time);
+extern int psw_time_striping(char *trace_name, char given_timestamp[], double *time, int* chunk_to_local_group_map);
 
-extern int psw_time_continugous(char *trace_name, char given_timestamp[], double *time);
+extern int psw_time_continugous(char *trace_name, char given_timestamp[], double *time, int* chunk_to_local_group_map);
 
 extern int degraded_reads(int *io_request, int *stripe_id_array, int stripe_count, int *num_extra_io, int if_continugous);
 

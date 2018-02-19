@@ -1494,7 +1494,7 @@ void QuickSort_index(int *data, int index[],int left, int right){
 		QuickSort_index(data, index,p+1, right);
 }
 
-
+/*
 // partial stripe writes 
 int calculate_psw_io_striping_stripe(char *trace_name, char given_timestamp[]){
 
@@ -1979,7 +1979,7 @@ int calculate_psw_io_continugous_stripe(char *trace_name, char given_timestamp[]
 	return io_count;
 
 }
-
+*/
 
 // calculate the ones in the matrix
 int calculate_chunk_num_io_matrix(int *io_matrix, int len, int width){
