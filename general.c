@@ -928,7 +928,6 @@ void lrc_local_group_orgnzt(int cur_stripe, int* stripe_chnk_crrltn_dgr, int* ch
 
 	}
 
-
 	free(if_select);
 	free(slct_lg_chnk_idx);
 
@@ -1126,7 +1125,6 @@ void stripe_orgnzt(int* caso_crltd_mtrx, int* caso_crltd_dgr_mtrix, int num_corr
 			}	
 
 			//printf("select_chunk_index=%d, priority=%d\n", select_chunk_index, priority);
-
 			// if there still exists relevant chunks, then organize the chunks that owns largest priority
 			if(flag==1){
 
@@ -1452,6 +1450,8 @@ void quick_sort_value(int *data, int left, int right){
 		quick_sort_value(data,p+1, right);
 }
 
+
+
 // it sorts the unrelevant chunks according to their access frequencies
 // the function is to sort the array and move the corresponding index to the new position;
 void QuickSort_index(int *data, int index[],int left, int right){
@@ -1492,6 +1492,7 @@ void QuickSort_index(int *data, int index[],int left, int right){
 		QuickSort_index(data, index,left, p-1);
 	if(right - p > 1)
 		QuickSort_index(data, index,p+1, right);
+	
 }
 
 /*
@@ -2780,7 +2781,6 @@ int psw_time_continugous(char *trace_name, char given_timestamp[], double *time)
 // is available is marked as 1). What we do is to perform degraded reads
 // @stripe_id_array: it records the stripe id that is involved in the requests
 // @stripe_count: the number of stripes that are involved.
-
 int degraded_reads(int *io_request, int *stripe_id_array, int stripe_count, int *num_extra_io, int if_continugous){
 
 	int i, j; 

@@ -93,12 +93,6 @@ int main(int argc, char *argv[]){
 	  exit(1);
   	}
 
-  // calculate the extra partial stripe writes in sequential stripe
-  striping_io_count=calculate_psw_io_striping_stripe(argv[1], begin_timestamp); // i.e., organizing the data by following horizontal data placement
-  contiguous_io_count=calculate_psw_io_continugous_stripe(argv[1], begin_timestamp, max_access_chunk); // i.e., organizing the data by following vertical data placement
-
-  printf("striping_io_count=%d, contiguous_io_count=%d\n",striping_io_count, contiguous_io_count);
-
   //calculate_caso_chunk_num(argv[1],begin_timestamp);
 
   //printf("max_access_chunks_per_timestamp=%d\n",max_access_chunks_per_timestamp);
