@@ -4,7 +4,7 @@
 #define inf 999999999
 #define max_aces_blk_num 50000000
 #define num_blk_per_aces 1000000
-#define max_num_peer_chunks 2000  // we call the chunks that are accessed within a timestamp peer chunks
+#define max_num_peer_chunks 20000  // we call the chunks that are accessed within a timestamp peer chunks
 #define max_num_relevent_chunks_per_chunk 1000 // it defines the maximum number of relevant chunks to a chunk
 #define num_assume_timestamp 1000000
 #define bucket_depth 20
