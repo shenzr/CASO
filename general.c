@@ -160,7 +160,6 @@ void calculate_chunk_num(char *trace_name){
 
 	int i,j;
 	int access_start_block, access_end_block;
-	int cur_index;
 	int num_distict_chunks_per_timestamp;
 
 	int count;
@@ -175,7 +174,6 @@ void calculate_chunk_num(char *trace_name){
 	offset_int=&a;
 	size_int=&b;
 
-	cur_index=0;
 	count=0;
 	temp_count=0;
 	num_distict_chunks_per_timestamp=0;
@@ -352,52 +350,39 @@ void calculate_caso_chunk_num(char *trace_name, char begin_timestamp[]){
 		exit(0);
 	}
 
-
 	char operation[100];
 	char timestamp[100];
 	char divider='\t';
 	char pre_timestamp[100];
-
-	int cur_index;
 	int count;
-	int temp_count;
+	int if_begin;
 
-	long long *size_int;
-	long long *offset_int;
-	long long a,b;
-	a=0LL;
-	b=0LL;
-	offset_int=&a;
-	size_int=&b;
-
-	cur_index=0;
 	count=0;
-	temp_count=-1;
-
-	fgets(operation, sizeof(operation), fp);
-	new_strtok(operation,divider, pre_timestamp);
-	fseek(fp,0,SEEK_SET);
+	if_begin=1;
 
 	caso_rcd_idx=0;
 
-	count=0;
 	while(fgets(operation, sizeof(operation), fp)) {
 
 		//printf("count=%d\n",count);
+
+        //if it is the beginning of the trace
+		if(if_begin==1){
+
+			if_begin=0;
+			strcpy(pre_timestamp, timestamp);
+
+			}
 
 		new_strtok(operation,divider, timestamp);
 
 		if(strcmp(pre_timestamp,timestamp)!=0){
 
 			// calculate the numeber of timestamp
-			if(strcmp(begin_timestamp,timestamp)!=0){
-
+			if(strcmp(begin_timestamp,timestamp)!=0)
 				caso_rcd_idx+=num_distinct_chunks_timestamp[count];
 
-			}
-
 			else break;
-
 
 			strcpy(pre_timestamp, timestamp);
 
@@ -779,11 +764,8 @@ void updt_stripe_chnk_crrltn_dgr(int *stripe_map, int cur_chunk_num, int *temp_s
 		int* caso_crltd_dgr_mtrix,  int slct_chunk_index, int* stripe_chnk_crrltn_dgr){
 
 	int i;
-	int count;
 	int slct_chnk;
 	int k;
-
-	count=0;
 
 	for(i=0;i<cur_chunk_num;i++){
 
@@ -819,12 +801,8 @@ void lrc_local_group_orgnzt(int cur_stripe, int* stripe_chnk_crrltn_dgr, int* ch
 
 	int i;
 	int j,k;
-	int lcl_idx;
-	int lcl_chnk;
-	int fir_chnk, sec_chnk;
 	int fir_idx, sec_idx;
 	int max_dgr=-1;
-	int flag;
 	int num_chunk_per_lg;
 	int chunk_id;
 	int count;
@@ -833,6 +811,9 @@ void lrc_local_group_orgnzt(int cur_stripe, int* stripe_chnk_crrltn_dgr, int* ch
 	int chose_chnk_idx;
 	int stripe_chunk_idx;
 	int crrltd_chunk_idx;
+
+	fir_idx=-1;
+	sec_idx=-1;
 
 	num_chunk_per_lg=erasure_k/lrc_lg;
 
@@ -846,7 +827,6 @@ void lrc_local_group_orgnzt(int cur_stripe, int* stripe_chnk_crrltn_dgr, int* ch
 
 		//select the first two chunks with maximum correlation degree among the remaining chunks in cur_stripe
 		max_dgr=-1;
-		flag=0;
 		count=0;
 
 		for(j=0; j<erasure_k; j++){
@@ -861,7 +841,6 @@ void lrc_local_group_orgnzt(int cur_stripe, int* stripe_chnk_crrltn_dgr, int* ch
 					fir_idx=j;
 					sec_idx=k;
 					max_dgr=stripe_chnk_crrltn_dgr[j*(erasure_k+1)+k+1];
-					flag=1;
 
 				}
 			}
@@ -958,12 +937,14 @@ void stripe_orgnzt(int* caso_crltd_mtrx, int* caso_crltd_dgr_mtrix, int num_corr
 	memset(if_select_correlated_chunks, 0, sizeof(int)*num_correlated_chunk);
 	memset(stripe_chnk_crrltn_dgr, 0, sizeof(int)*(erasure_k+1)*erasure_k);
 
+	first_chunk_index=-1;
+	second_chunk_index=-1;
+
 	//init crrltd_chnk_set
 	for(i=0; i<num_correlated_chunk; i++)
 		crrltd_chnk_set[i]=caso_crltd_mtrx[i*max_num_relevent_chunks_per_chunk];
 
 	// initiate the unrelevant chunks and their indices
-	int count=0;
 	int stripe_count;
 	int temp_count;
 	int priority;
@@ -976,7 +957,6 @@ void stripe_orgnzt(int* caso_crltd_mtrx, int* caso_crltd_dgr_mtrix, int num_corr
 	int num_chunk_per_lg;
 
 	num_chunk_per_lg=erasure_k/lrc_lg;
-	count=0;
 	stripe_count=0;
 
 	// we first organize the relevant chunks 
@@ -1150,7 +1130,7 @@ void stripe_orgnzt(int* caso_crltd_mtrx, int* caso_crltd_dgr_mtrix, int num_corr
 		}
 
 		//if it is LRC, then we have to organize the chunks of a stripe into local groups
-		if(strcmp(code_type, "lrc")==0)
+		if(strcmp(code_type, "lrc")==0) //<----------------We have problem at the following line
 			lrc_local_group_orgnzt(temp_stripe, stripe_chnk_crrltn_dgr, chunk_to_local_group_map, stripe_chnk_idx_in_crrltn_set, crrltd_chnk_pttn_idx);
 
 	}
@@ -1227,13 +1207,12 @@ void caso_stripe_ognztn(char *trace_name,  int *analyze_chunks_time_slots, int *
 	int k;
 	int p;
 	int count_timestamp;
-	int count;
 	int access_start_block, access_end_block;
 	int cur_index;
 	int if_begin;	 
 	int bucket_num;
 	int cell_num;
-	int num_correlated_chunk, num_correlated_pattern;
+	int num_correlated_chunk;
 	int flag, if_head_insert;
 	int temp_chunk;
 	int peer_count;
@@ -1253,7 +1232,6 @@ void caso_stripe_ognztn(char *trace_name,  int *analyze_chunks_time_slots, int *
 	memset(correlate_chunk_bucket, -1, sizeof(int)*cell_num);
 
 	cur_index=0;
-	count=0; 
 	count_timestamp=0;
 	if_begin=1;
 
@@ -1336,7 +1314,6 @@ void caso_stripe_ognztn(char *trace_name,  int *analyze_chunks_time_slots, int *
 
 	//calculate correlated chunk num
 	num_correlated_chunk=0;
-	num_correlated_pattern=0;
 	peer_count=0;
 
 	for(i=0; i<caso_rcd_idx; i++){
@@ -2151,14 +2128,11 @@ int psw_time_caso(char *trace_name, char given_timestamp[], int *chunk_to_stripe
 	int i,j;
 	int k;	
 	int access_start_block, access_end_block;
-	int cur_index;
 	int count;
-	int temp_count;
 	int flag;
 	int io_count;
 	int temp_stripe_id, temp_chunk_id;
-	int chunk_count;
-
+	
 	long long *size_int;
 	long long *offset_int;
 	long long a,b;
@@ -2167,9 +2141,7 @@ int psw_time_caso(char *trace_name, char given_timestamp[], int *chunk_to_stripe
 	offset_int=&a;
 	size_int=&b;
 
-	cur_index=0;
 	count=0;
-	temp_count=0;
 
 	flag=0;
 	io_count=0;
@@ -2189,7 +2161,7 @@ int psw_time_caso(char *trace_name, char given_timestamp[], int *chunk_to_stripe
 	int rotation;
 	int sort_index, real_index;
 	int max_stripe_count=-1;
-	int lg_id, lg_count;
+	int lg_id, lg_count=0;
 
 	int *total_caso_io;
 	int c=0;
@@ -2257,7 +2229,6 @@ int psw_time_caso(char *trace_name, char given_timestamp[], int *chunk_to_stripe
 
 			// re-initiate the stripe_count
 			stripe_count=0;
-			chunk_count=0;
 			lg_count=0;
 
 			strcpy(pre_timestamp,timestamp); 
@@ -2373,13 +2344,10 @@ int psw_time_striping(char *trace_name, char given_timestamp[], double *time){
 	int i,j;
 	int k;
 	int access_start_block, access_end_block;
-	int cur_index;
 	int count;
-	int temp_count;
 	int flag;
 	int io_count;
 	int start_stripe, end_stripe;
-	int start_chunk_stripe, end_chunk_stripe;
 	int temp_stripe_id, temp_chunk_id;
 	int stripe_count;
 	int rotation;
@@ -2389,14 +2357,12 @@ int psw_time_striping(char *trace_name, char given_timestamp[], double *time){
 	long long *size_int;
 	long long *offset_int;
 	long long a,b;
-
+	
 	a=0LL;
 	b=0LL;
 	offset_int=&a;
 	size_int=&b;
-	cur_index=0;
 	count=0;
-	temp_count=0;
 	flag=0;
 	io_count=0;
 
@@ -2406,7 +2372,7 @@ int psw_time_striping(char *trace_name, char given_timestamp[], double *time){
 	int* lg_per_tmstmp=(int*)malloc(sizeof(int)*max_accessed_stripes*lrc_lg); 
 
 	int write_count;
-	int lg_count, lg_id;
+	int lg_count=0, lg_id;
 	int num_chnk_per_lg; 
 
 	// initialize the io_request
@@ -2451,10 +2417,6 @@ int psw_time_striping(char *trace_name, char given_timestamp[], double *time){
 		start_stripe=access_start_block/(erasure_k);
 		end_stripe=access_end_block/(erasure_k);
 
-		// determine the chunk id in the stripe 
-		start_chunk_stripe=access_start_block%erasure_k;
-		end_chunk_stripe=access_end_block%erasure_k;
-
 		// calculate the numeber of timestamp
 		if(strcmp(pre_timestamp,timestamp)!=0){
 
@@ -2475,7 +2437,7 @@ int psw_time_striping(char *trace_name, char given_timestamp[], double *time){
 			//printf("timestamp=%s, stripe_count=%d\n\n",pre_timestamp,stripe_count);
 
 			// list the new access in current timestamp
-			// printf("timestamp=%s, start_stripe=%d, end_stripe=%d\n", timestamp, start_stripe, end_stripe);
+			printf("timestamp=%s, start_stripe=%d, end_stripe=%d\n", timestamp, start_stripe, end_stripe);
 
 			// re-initiate the stripes_per_timestamp
 			memset(io_request, 0, max_accessed_stripes*(erasure_k+erasure_m));
@@ -2554,7 +2516,7 @@ int psw_time_striping(char *trace_name, char given_timestamp[], double *time){
 
 	write_count++;
 
-	//printf("num_of_write_op=%d, total_write_block_num=%d\n", write_count, *total_write_block_num);
+	printf("num_of_write_op=%d, total_write_block_num=%d\n", write_count, *total_write_block_num);
 	//printf("timestamp=%s, stripe_count=%d\n\n",pre_timestamp,stripe_count);
 
 	// for the last operation
@@ -2597,9 +2559,7 @@ int psw_time_continugous(char *trace_name, char given_timestamp[], double *time)
 	int i,j;
 	int k;
 	int access_start_block, access_end_block;
-	int cur_index;
 	int count;
-	int temp_count;
 	int flag;
 	int temp_stripe;
 	int io_count;
@@ -2607,7 +2567,7 @@ int psw_time_continugous(char *trace_name, char given_timestamp[], double *time)
 	int temp_row_id;
 	int stripe_count;
 	int temp_chunk_id;
-	int lg_id, lg_count;
+	int lg_id, lg_count=0;
 	int num_chnk_per_lg;
 
 	num_chnk_per_lg=erasure_k/lrc_lg;
@@ -2620,9 +2580,7 @@ int psw_time_continugous(char *trace_name, char given_timestamp[], double *time)
 	offset_int=&a;
 	size_int=&b;
 
-	cur_index=0;
 	count=0;
-	temp_count=0;
 	flag=0;
 	io_count=0;
 
@@ -2972,13 +2930,9 @@ void dr_time_caso(char *trace_name, char given_timestamp[], int *chunk_to_stripe
 	int i,j;
 	int failed_disk;
 	int access_start_block, access_end_block;
-	int cur_index;
 	int count;
-	int temp_count;
-	int flag;
 	int io_count;
 	int temp_stripe_id, temp_chunk_id;
-	int chunk_count;
 
 	long long *size_int;
 	long long *offset_int;
@@ -2987,10 +2941,7 @@ void dr_time_caso(char *trace_name, char given_timestamp[], int *chunk_to_stripe
 	b=0LL;
 	offset_int=&a;
 	size_int=&b;
-	cur_index=0;
 	count=0;
-	temp_count=0;
-	flag=0;
 	io_count=0;
 
 	int max_accessed_stripes=max_access_chunks_per_timestamp; // suppose the maximum accessed stripes is 100
@@ -3021,8 +2972,7 @@ void dr_time_caso(char *trace_name, char given_timestamp[], int *chunk_to_stripe
 
 		count=0;
 		fseek(fp, 0, SEEK_SET);
-		flag=0;
-
+		
 		// re-initialize the io_request array
 		for(i=0; i<max_accessed_stripes*(erasure_k+erasure_m); i++)
 			io_request[i]=0;
@@ -3042,9 +2992,6 @@ void dr_time_caso(char *trace_name, char given_timestamp[], int *chunk_to_stripe
 			// if it has not reached the given_timestamp then continue
 			if(count<start_evlat_num)
 				continue;
-
-			// if it reaches the given timestamp
-			flag=1;
 
 			// get the operation 
 			if(strcmp(op_type, "Read")!=0){ 
@@ -3089,7 +3036,6 @@ void dr_time_caso(char *trace_name, char given_timestamp[], int *chunk_to_stripe
 
 				// re-initiate the stripe_count
 				stripe_count=0;
-				chunk_count=0;
 
 				strcpy(pre_timestamp,timestamp); 
 
@@ -3191,13 +3137,9 @@ void dr_time_striping(char *trace_name, char given_timestamp[], int *num_extra_i
 
 	char pre_timestamp[100];
 	int access_start_block, access_end_block;
-	int cur_index;
 	int count;
-	int temp_count;
-	int flag;
 	int io_count;
 	int temp_stripe_id, temp_chunk_id;
-	int chunk_count;
 	int if_dr;
 
 	long long *size_int;
@@ -3208,10 +3150,7 @@ void dr_time_striping(char *trace_name, char given_timestamp[], int *num_extra_i
 	offset_int=&a;
 	size_int=&b;
 
-	cur_index=0;
 	count=0;
-	temp_count=0;
-	flag=0;
 	io_count=0;
 
 	int max_accessed_stripes=max_access_chunks_per_timestamp; // suppose the maximum accessed stripes is 100
@@ -3235,7 +3174,6 @@ void dr_time_striping(char *trace_name, char given_timestamp[], int *num_extra_i
 
 	for(failed_disk=0; failed_disk< erasure_k+erasure_m; failed_disk++){
 
-		flag=0;
 		count=0;
 
 		fseek(fp, 0, SEEK_SET);
@@ -3256,9 +3194,6 @@ void dr_time_striping(char *trace_name, char given_timestamp[], int *num_extra_i
 			// if it has not reached the given_timestamp then continue
 			if(count<start_evlat_num)
 				continue;
-
-			// if it reaches the given timestamp
-			flag=1;
 
 			// get the operation 
 			if(strcmp(op_type, "Read")!=0) 
@@ -3302,7 +3237,6 @@ void dr_time_striping(char *trace_name, char given_timestamp[], int *num_extra_i
 
 				// re-initiate the stripe_count
 				stripe_count=0;
-				chunk_count=0;
 
 				strcpy(pre_timestamp,timestamp); 
 
@@ -3410,15 +3344,11 @@ void dr_time_continugous(char *trace_name, char given_timestamp[], int *num_extr
 	int i,j;
 	int failed_disk;
 	int access_start_block, access_end_block;
-	int cur_index;
 	int count;
-	int temp_count;
-	int flag;
 	int io_count;
 	int temp_group_id, temp_stripe, temp_group_block_id;
 	int temp_row_id;
 	int group_num_blocks=contiguous_block*erasure_k;
-	int chunk_count;
 	int stripe_count;
 	int temp_contiguous_block;
 	int temp_chunk_id;
@@ -3430,10 +3360,7 @@ void dr_time_continugous(char *trace_name, char given_timestamp[], int *num_extr
 	b=0LL;
 	offset_int=&a;
 	size_int=&b;
-	cur_index=0;
 	count=0;
-	temp_count=0;
-	flag=0;
 	io_count=0;
 
 	int max_accessed_stripes=max_access_chunks_per_timestamp; // suppose the maximum accessed stripes is 100
@@ -3457,8 +3384,6 @@ void dr_time_continugous(char *trace_name, char given_timestamp[], int *num_extr
 
 		count=0;
 
-		flag=0;
-
 		fseek(fp, 0, SEEK_SET);
 
 		for(i=0;i<max_accessed_stripes*(erasure_k+erasure_m);i++)
@@ -3476,9 +3401,6 @@ void dr_time_continugous(char *trace_name, char given_timestamp[], int *num_extr
 			// if it has not reached the given_timestamp then continue
 			if(count<start_evlat_num)
 				continue;
-
-			// if it reaches the given timestamp
-			flag=1;
 
 			// get the operation 
 			if(strcmp(op_type, "Read")!=0) 
@@ -3515,7 +3437,6 @@ void dr_time_continugous(char *trace_name, char given_timestamp[], int *num_extr
 
 				// re-initiate the stripe_count
 				stripe_count=0;
-				chunk_count=0;
 
 				strcpy(pre_timestamp,timestamp); 
 

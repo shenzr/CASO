@@ -7,6 +7,7 @@
 #include <fcntl.h>
 #include <string.h>
 #include <aio.h>
+#include <sys/time.h>
 
 #include "common.h"
 #include "general.h"
@@ -25,7 +26,6 @@ int main(int argc, char *argv[]){
 
   int i;
   int count;
-  int num_stripe;
   int begin_timestamp_num;
   int striping_io_count;
   int contiguous_io_count;
@@ -83,8 +83,6 @@ int main(int argc, char *argv[]){
   printf("<------calculate_chunk_num\n");
 
   int max_access_chunk=sort_trace_pattern[0];
-  int min_access_chunk=sort_trace_pattern[cur_rcd_idx-1];
-  int start_striping_chunk=min_access_chunk/erasure_k*erasure_k;
 
   printf("max_access_chunk/temp_erasure_k=%d, disk_capacity=%d\n", max_access_chunk/temp_erasure_k, disk_capacity/temp_chunk_size_kb);
 
@@ -121,7 +119,6 @@ int main(int argc, char *argv[]){
   gettimeofday(&ed_tm, NULL);
 
   printf("caso_analyze_time=%.2lf\n", ed_tm.tv_sec-bg_tm.tv_sec+(ed_tm.tv_usec-bg_tm.tv_usec)*1.0/1000000);
-  num_stripe=(max_access_chunk-start_striping_chunk)/(block_size*erasure_k);
 
   double *caso_time, *striping_time, *continugous_time;
   double f=0, g=0, h=0;

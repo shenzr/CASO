@@ -46,3 +46,5 @@ extern void sorting_trace_access_pattern();
 
 extern void binary_search(int array[], int num, int value);
 
+extern void caso_stripe_ognztn(char *trace_name,  int *analyze_chunks_time_slots, int *num_chunk_per_timestamp, int bgn_tmstmp_num, int* sort_caso_rcd_pattern, 
+		int* sort_caso_rcd_index, int* chunk_to_stripe_map, int* chunk_to_stripe_chunk_map, int* chunk_to_local_group_map);
