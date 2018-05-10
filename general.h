@@ -19,9 +19,6 @@ extern void QuickSort_index(int *data, int index[],int left, int right);
 
 extern int calculate_chunk_num_io_matrix(int *io_matrix, int len, int width);
 
-extern void stripe_organization(int *relevant_chunks_table, int *caso_relevant_set, int *caso_relevant_degree,  
-              						    int *chunk_to_stripe_map, int *chunk_to_stripe_chunk_map, int num_stripe, int caso_num_rele_chunks, int *caso_rele_chunk_index);
-
 extern void system_partial_stripe_writes(int *io_matrix, int *accessed_stripes, int stripe_count, int *total_write_block_num);
 
 extern int psw_time_caso(char *trace_name, char given_timestamp[], int *chunk_to_stripe_map, int *chunk_to_stripe_chunk_map, 
@@ -47,4 +44,4 @@ extern void sorting_trace_access_pattern();
 extern void binary_search(int array[], int num, int value);
 
 extern void caso_stripe_ognztn(char *trace_name,  int *analyze_chunks_time_slots, int *num_chunk_per_timestamp, int bgn_tmstmp_num, int* sort_caso_rcd_pattern, 
-									   int* sort_caso_rcd_index, int* chunk_to_stripe_map, int* chunk_to_stripe_chunk_map, int* chunk_to_local_group_map);
+		int* sort_caso_rcd_index, int* sort_caso_rcd_freq, int* chunk_to_stripe_map, int* chunk_to_stripe_chunk_map, int* chunk_to_local_group_map);

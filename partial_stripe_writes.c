@@ -79,6 +79,13 @@ int main(int argc, char *argv[]){
 
   determine_begin_timestamp(argv[1], begin_timestamp, begin_timestamp_num);
 
+  count=0;
+  for(i=0; i<caso_rcd_idx; i++)
+  	if(freq_access_chunk[i]>=2)
+		count++;
+
+  printf("caso_rcd(freq>=2)=%d\n", count);
+
   printf("begin_timestamp=%s, begin_timestamp_num=%d\n", begin_timestamp, begin_timestamp_num);
   printf("<------calculate_chunk_num\n");
 
@@ -91,17 +98,19 @@ int main(int argc, char *argv[]){
 	  exit(1);
   	}
 
-  //calculate_caso_chunk_num(argv[1],begin_timestamp);
+  printf("max_access_chunks_per_timestamp=%d\n", max_access_chunks_per_timestamp);
 
   //printf("max_access_chunks_per_timestamp=%d\n",max_access_chunks_per_timestamp);
-  int *analyze_chunks_time_slots=(int*)malloc(sizeof(int)*begin_timestamp_num*max_access_chunks_per_timestamp);// record all the accessed blocks at every timestamp
-  int *access_time_slots_index=(int*)malloc(sizeof(int)*begin_timestamp_num*max_access_chunks_per_timestamp); // it records the index of each chunk of total_access in the trace_access_pattern
-  int *num_chunk_per_timestamp=(int*)malloc(sizeof(int)*begin_timestamp_num);  // it records the number of accessed chunks in every timestamp before erasure coding
-  int *sort_caso_rcd_pattern=(int*)malloc(sizeof(int)*caso_rcd_idx); //it records the sorted values of the data for correlation analysis in CASO
-  int *sort_caso_rcd_index=(int*)malloc(sizeof(int)*caso_rcd_idx);
-  int *chunk_to_stripe_map=(int*)malloc(sizeof(int)*cur_rcd_idx); // it records the stripe id for each chunk
-  int *chunk_to_stripe_chunk_map=(int*)malloc(sizeof(int)*cur_rcd_idx); // it records the chunk id in the stripe for each chunk
-  int *chunk_to_local_group_map=(int*)malloc(sizeof(int)*cur_rcd_idx); // it records which local group a chunk is organized at
+  int* analyze_chunks_time_slots=(int*)malloc(sizeof(int)*begin_timestamp_num*max_access_chunks_per_timestamp);// record all the accessed blocks at every timestamp
+  int* access_time_slots_index=(int*)malloc(sizeof(int)*begin_timestamp_num*max_access_chunks_per_timestamp); // it records the index of each chunk of total_access in the trace_access_pattern
+  int* num_chunk_per_timestamp=(int*)malloc(sizeof(int)*begin_timestamp_num);  // it records the number of accessed chunks in every timestamp before erasure coding
+  int* sort_caso_rcd_pattern=(int*)malloc(sizeof(int)*caso_rcd_idx); //it records the sorted values of the data for correlation analysis in CASO
+  int* sort_caso_rcd_index=(int*)malloc(sizeof(int)*caso_rcd_idx);
+  int* sort_caso_rcd_freq=(int*)malloc(sizeof(int)*caso_rcd_idx);
+  int* chunk_to_stripe_map=(int*)malloc(sizeof(int)*cur_rcd_idx); // it records the stripe id for each chunk
+  int* chunk_to_stripe_chunk_map=(int*)malloc(sizeof(int)*cur_rcd_idx); // it records the chunk id in the stripe for each chunk
+  int* chunk_to_local_group_map=(int*)malloc(sizeof(int)*cur_rcd_idx); // it records which local group a chunk is organized at
+  int orig_index;
 
   for(i=0; i<caso_rcd_idx; i++)
   	sort_caso_rcd_pattern[i]=trace_access_pattern[i];
@@ -111,10 +120,18 @@ int main(int argc, char *argv[]){
 
   QuickSort_index(sort_caso_rcd_pattern, sort_caso_rcd_index, 0, caso_rcd_idx-1);
 
+  for(i=0; i<caso_rcd_idx; i++){
+  	
+  	orig_index=sort_caso_rcd_index[i];
+	sort_caso_rcd_freq[i]=freq_access_chunk[orig_index];
+
+  	}
+  	
+
   gettimeofday(&bg_tm, NULL);
 
   caso_stripe_ognztn(argv[1], analyze_chunks_time_slots, num_chunk_per_timestamp, begin_timestamp_num, sort_caso_rcd_pattern, sort_caso_rcd_index, 
-  				chunk_to_stripe_map, chunk_to_stripe_chunk_map, chunk_to_local_group_map);
+  					 sort_caso_rcd_freq, chunk_to_stripe_map, chunk_to_stripe_chunk_map, chunk_to_local_group_map);
 
   gettimeofday(&ed_tm, NULL);
 
@@ -142,6 +159,7 @@ int main(int argc, char *argv[]){
   free(sort_caso_rcd_index);
   free(access_time_slots_index);
   free(chunk_to_local_group_map);
+  free(sort_caso_rcd_freq);
 
   return 0;
 
