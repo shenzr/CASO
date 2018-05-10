@@ -3,7 +3,7 @@
 
 #define inf 999999999
 #define max_aces_blk_num 500000 // the strict accessed blocks in a trace (a block may appear more than twice)
-#define max_num_peer_chunks 60  // we call the chunks that are accessed within a timestamp peer chunks
+#define max_num_peer_chunks 1000  // we call the chunks that are accessed within a timestamp peer chunks
 #define max_num_relevent_chunks_per_chunk 20 // it defines the maximum number of relevant chunks to a chunk
 #define num_assume_timestamp 1000000
 #define bucket_depth 20

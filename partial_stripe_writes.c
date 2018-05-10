@@ -148,8 +148,8 @@ int main(int argc, char *argv[]){
   psw_time_striping(argv[1], begin_timestamp, striping_time, chunk_to_local_group_map);
   psw_time_continugous(argv[1], begin_timestamp,continugous_time, chunk_to_local_group_map);
 
-  printf("caso_psw_io=%d, striping_io_count=%d, contiguous_io_count=%d\n", caso_psw_io, striping_io_count, contiguous_io_count);
   printf("caso_time=%.2lf, striping_time=%.2lf, continugous_time=%.2lf\n", *caso_time, *striping_time, *continugous_time);
+  //printf("caso_psw_io/striping_psw_io=%.2lf\n", caso_psw_io*1.0/striping_io_count)
 
   free(chunk_to_stripe_map);
   free(chunk_to_stripe_chunk_map);
