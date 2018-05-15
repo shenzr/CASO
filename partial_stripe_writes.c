@@ -72,6 +72,8 @@ int main(int argc, char *argv[]){
   // calculate the partial stripe writes io 
   begin_timestamp_num=begin_stripe_ratio*num_timestamp;
 
+  printf("num_timestamp=%d, validate_timestamp=%d\n", num_timestamp, begin_timestamp_num);
+
   // determine the begin_timestamp
   char begin_timestamp[100];
 
