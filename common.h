@@ -3,10 +3,10 @@
 
 #define inf 999999999
 #define max_aces_blk_num 500000 // the strict accessed blocks in a trace (a block may appear more than twice)
-#define max_num_peer_chunks 1000  // we call the chunks that are accessed within a timestamp peer chunks
-#define max_num_relevent_chunks_per_chunk 20 // it defines the maximum number of relevant chunks to a chunk
+#define max_num_peer_chunks 4000  // we call the chunks that are accessed within a timestamp peer chunks
+#define max_num_relevent_chunks_per_chunk 2000 // it defines the maximum number of relevant chunks to a chunk
 #define num_assume_timestamp 1000000
-#define bucket_depth 20
+#define bucket_depth 1000
 
 #define IF_LRC 0
 
@@ -14,7 +14,7 @@
 #define erasure_k 4
 #define erasure_m 2
 #define erasure_w 8
-#define lrc_lg 2 // the number of local groups in a stripe
+#define lrc_lg 2 // the number of local groups in a stripe, it should be divisible by erasure_m and erasure_k
 #define lg_prty_num erasure_m/lrc_lg  // the number of local parity in a local group 
 
 #define contiguous_block 1024*16 // it defines the number of blocks in a column of a stripe under contiguous data placement

@@ -277,9 +277,11 @@ void calculate_chunk_num(char *trace_name){
 
 	fclose(fp);
 
+#if debug
     printf("cur_rcd_idx=%d\n", cur_rcd_idx);
     printf("trace_access_pattern:\n");
 	print_matrix(trace_access_pattern, cur_rcd_idx, 1);
+#endif
 
 }
 
@@ -440,6 +442,13 @@ void replace_old_peer_chunk(int* freq_peer_chks, int* rcd_peer_chks, int* caso_p
 	start_posi=start_search_posi[given_chunk_idx];
 
 	printf("replace the old and non-correlated chunk\n");
+
+	if(given_chunk_idx>=poten_crrltd_cnt){
+
+		printf("ERR: given_chunk_idx=%d, poten_crrltd_cnt=%d\n", given_chunk_idx, poten_crrltd_cnt);
+		exit(1);
+
+		}
 	
 	//we replace the chunk according to the access time 
 	//we assume that an old access chunk that are not correlated will not be a correlated chunk any more
@@ -476,6 +485,13 @@ void replace_old_peer_chunk(int* freq_peer_chks, int* rcd_peer_chks, int* caso_p
 			freq_peer_chks[sort_rplcd_chk_idx*max_num_peer_chunks+k]=0;
 			//update the number of peer chunks of rplcd_chk_id
 			num_peer_chks[sort_rplcd_chk_idx]--;
+
+	if(sort_rplcd_chk_idx>=poten_crrltd_cnt){
+
+		printf("ERR: sort_rplcd_chk_idx=%d, poten_crrltd_cnt=%d\n", sort_rplcd_chk_idx, poten_crrltd_cnt);
+		exit(1);
+
+		}			
 
 			if(k<start_search_posi[sort_rplcd_chk_idx])
 				start_search_posi[sort_rplcd_chk_idx]=k;
@@ -528,6 +544,13 @@ void record_access_freq(int bgn_tmstmp_num, int* analyze_chunks_time_slots, int*
 
 				sort_chk_idx1=binary_search(caso_poten_crrltd_chks, poten_crrltd_cnt, chunk_id1);
 				sort_chk_idx2=binary_search(caso_poten_crrltd_chks, poten_crrltd_cnt, chunk_id2);
+
+				if(sort_chk_idx1>=poten_crrltd_cnt || sort_chk_idx2>=poten_crrltd_cnt){
+
+					printf("ERR: sort_chk_idx1=%d, sort_chk_idx2=%d, poten_crrltd_cnt=%d\n", sort_chk_idx1, sort_chk_idx2, poten_crrltd_cnt);
+					exit(1);
+
+					}
 
 				//update rcd_peer_chks and freq_peer_chks of chunk_id1
 				for(j=1; j<max_num_peer_chunks; j++){
@@ -602,7 +625,7 @@ void record_access_freq(int bgn_tmstmp_num, int* analyze_chunks_time_slots, int*
  *@rcd_peer_chks: record the chunks that are simultaneously accessed within a timestamp. 
  */
 void extract_caso_crltd_chnk_dgr(int* caso_crltd_mtrx, int* caso_crltd_dgr_mtrix, int* rcd_peer_chks, int* freq_peer_chks, 
-		int num_correlate_chunk, int* num_peer_chunk){
+		                                     int num_correlate_chunk, int* num_peer_chunk){
 
 	int i,j;
 	int crltd_chunk_cnt;
@@ -610,31 +633,12 @@ void extract_caso_crltd_chnk_dgr(int* caso_crltd_mtrx, int* caso_crltd_dgr_mtrix
 	int if_crrltd_exist;
 	int peer_count;
 
-#if debug
-	printf("rcd_peer_chks:\n");
-	print_matrix(rcd_peer_chks, max_num_peer_chunks, poten_crrltd_cnt);
-
-	printf("freq_peer_chks:\n");
-	print_matrix(freq_peer_chks, max_num_peer_chunks, poten_crrltd_cnt);
-
-	printf("num_peer_chunk:\n");
-	print_matrix(num_peer_chunk, poten_crrltd_cnt, 1);
-#endif
-
 	//printf("num_correlate_chunk=%d\n",num_correlate_chunk);
 	memset(caso_crltd_mtrx, -1, sizeof(int)*num_correlate_chunk*max_num_relevent_chunks_per_chunk);
 	memset(caso_crltd_dgr_mtrix, -1, sizeof(int)*num_correlate_chunk*max_num_relevent_chunks_per_chunk);
 
 	crltd_chunk_cnt=0;
 	peer_count=0;
-
-#if debug
-	printf("freq_peer_chks:\n");
-	print_matrix(freq_peer_chks, max_num_peer_chunks, poten_crrltd_cnt);
-
-	printf("num_peer_chunk:\n");
-	print_matrix(num_peer_chunk, poten_crrltd_cnt, 1);
-#endif
 
 	for(i=0; i<poten_crrltd_cnt; i++){
 
@@ -654,6 +658,13 @@ void extract_caso_crltd_chnk_dgr(int* caso_crltd_mtrx, int* caso_crltd_dgr_mtrix
 			    its_crltd_chunk_cnt++;
 			    if_crrltd_exist=1;
 
+				if(its_crltd_chunk_cnt>=max_num_relevent_chunks_per_chunk){
+
+					printf("ERR: its_crltd_chunk_cnt>=max_num_relevent_chunks_per_chunk\n");
+					exit(1);
+
+					}
+
 			}
 
 			if(freq_peer_chks[i*max_num_peer_chunks+j]>=1)
@@ -665,7 +676,6 @@ void extract_caso_crltd_chnk_dgr(int* caso_crltd_mtrx, int* caso_crltd_dgr_mtrix
 				if(if_crrltd_exist==1){
 
 					caso_crltd_mtrx[crltd_chunk_cnt*max_num_relevent_chunks_per_chunk]=rcd_peer_chks[i*max_num_peer_chunks];
-					
 					crltd_chunk_cnt++;
 
 				}
@@ -677,11 +687,8 @@ void extract_caso_crltd_chnk_dgr(int* caso_crltd_mtrx, int* caso_crltd_dgr_mtrix
 		
 	}
 
-	printf("caso_crltd_mtrx:\n");
-	print_matrix(caso_crltd_mtrx, max_num_relevent_chunks_per_chunk, num_correlate_chunk);
+	printf("crltd_chunk_cnt=%d\n", crltd_chunk_cnt);
 
-	printf("caso_crltd_dgr_mtrix:\n");
-	print_matrix(caso_crltd_dgr_mtrix, max_num_relevent_chunks_per_chunk, num_correlate_chunk);
 
 }
 
@@ -1031,7 +1038,7 @@ void stripe_orgnzt(int* caso_crltd_mtrx, int* caso_crltd_dgr_mtrix, int num_corr
 		if(if_exist_clltn==0)
 			break;
 
-		printf("the %d-th correlated stripe: first_chunk_index=%d, second_chunk_index=%d, init_degree=%d\n", stripe_count, caso_crltd_mtrx[first_chunk_index*max_num_relevent_chunks_per_chunk], caso_crltd_mtrx[second_chunk_index*max_num_relevent_chunks_per_chunk], temp_max);
+		//printf("the %d-th correlated stripe: first_chunk_index=%d, second_chunk_index=%d, init_degree=%d\n", stripe_count, caso_crltd_mtrx[first_chunk_index*max_num_relevent_chunks_per_chunk], caso_crltd_mtrx[second_chunk_index*max_num_relevent_chunks_per_chunk], temp_max);
 
 		// mark the cell to indicate that these two chunks have been selected 
 		if_select_correlated_chunks[first_chunk_index]=1;
@@ -1129,7 +1136,7 @@ void stripe_orgnzt(int* caso_crltd_mtrx, int* caso_crltd_dgr_mtrix, int num_corr
 
 			}
 
-			printf("flag=%d, selected_chunk=%d, priority=%d\n", flag, caso_crltd_mtrx[select_chunk_index*max_num_relevent_chunks_per_chunk], temp_max);
+			//printf("flag=%d, selected_chunk=%d, priority=%d\n", flag, caso_crltd_mtrx[select_chunk_index*max_num_relevent_chunks_per_chunk], temp_max);
 			
 		}
 
@@ -1189,7 +1196,7 @@ void stripe_orgnzt(int* caso_crltd_mtrx, int* caso_crltd_dgr_mtrix, int num_corr
 	}
 
 
-
+#if debug
 	//print the chunk_stripe_map 
 	printf("chunk_to_stripe_map:\n");
 	for(i=0; i<cur_rcd_idx; i++)
@@ -1200,7 +1207,7 @@ void stripe_orgnzt(int* caso_crltd_mtrx, int* caso_crltd_dgr_mtrix, int num_corr
 	for(i=0; i<cur_rcd_idx; i++)
 		printf("chunk_id=%d, chunk_to_local_group_map[%d]=%d\n", trace_access_pattern[i], i, chunk_to_local_group_map[i]);
 	printf("\n");
-
+#endif
 
 	free(if_select_correlated_chunks);
 	free(temp_stripe);
@@ -1365,7 +1372,7 @@ void caso_stripe_ognztn(char *trace_name,  int *analyze_chunks_time_slots, int *
 	memset(num_peer_chks, 0, sizeof(int)*poten_crrltd_cnt);
 
 	record_access_freq(bgn_tmstmp_num, analyze_chunks_time_slots, caso_poten_crrltd_chks, 
-			num_chunk_per_timestamp, rcd_peer_chks, freq_peer_chks, num_peer_chks);
+			           num_chunk_per_timestamp, rcd_peer_chks, freq_peer_chks, num_peer_chks);
 
 	//calculate correlated chunk num
 	num_correlated_chunk=0;
@@ -1426,7 +1433,7 @@ void caso_stripe_ognztn(char *trace_name,  int *analyze_chunks_time_slots, int *
 
 	//extract the correlated data chunks and their degrees
 	extract_caso_crltd_chnk_dgr(caso_crltd_mtrx, caso_crltd_dgr_mtrix, rcd_peer_chks, freq_peer_chks, num_correlated_chunk, num_peer_chks);
-
+	
 	// generate crrltd_chnk_pttn_idx 
 	for(i=0; i<num_correlated_chunk; i++){
 
@@ -1440,11 +1447,12 @@ void caso_stripe_ognztn(char *trace_name,  int *analyze_chunks_time_slots, int *
 	stripe_orgnzt(caso_crltd_mtrx, caso_crltd_dgr_mtrix, num_correlated_chunk, chunk_to_stripe_map, chunk_to_stripe_chunk_map, 
 				  chunk_to_local_group_map, crrltd_chnk_pttn_idx);
 
+
+	free(freq_peer_chks);
 	free(correlate_chunk_bucket);
 	free(caso_crltd_mtrx);
 	free(caso_crltd_dgr_mtrix);
 	free(rcd_peer_chks);
-	free(freq_peer_chks);
 	free(crrltd_chnk_pttn_idx);
 	free(num_peer_chks);
 	free(ognzd_stripe_idx);
@@ -2395,7 +2403,6 @@ int psw_time_striping(char *trace_name, char given_timestamp[], double *time){
 	int count;
 	int flag;
 	int io_count;
-	int start_stripe, end_stripe;
 	int temp_stripe_id, temp_chunk_id;
 	int stripe_count;
 	int rotation;
@@ -2439,8 +2446,6 @@ int psw_time_striping(char *trace_name, char given_timestamp[], double *time){
 	struct timeval begin_time, end_time;
 	while(fgets(operation, sizeof(operation), fp)) {
 
-		////printf("count=%d\n",count);
-
 		timestamp=strtok(operation,"\t");
 		op_type=strtok(NULL,"\t");
 		offset=strtok(NULL,"\t");
@@ -2464,10 +2469,6 @@ int psw_time_striping(char *trace_name, char given_timestamp[], double *time){
 		trnsfm_char_to_int(size, size_int);
 		access_end_block=(*offset_int+*size_int-1)/block_size;		
 
-		// determine the stripes they belong 
-		start_stripe=access_start_block/(erasure_k);
-		end_stripe=access_end_block/(erasure_k);
-
 		// calculate the numeber of timestamp
 		if(strcmp(pre_timestamp,timestamp)!=0){
 
@@ -2482,13 +2483,6 @@ int psw_time_striping(char *trace_name, char given_timestamp[], double *time){
 			//system_partial_stripe_writes(io_request, stripes_per_timestamp, stripe_count, total_write_block_num);
 			gettimeofday(&end_time, NULL);
 			*time+=end_time.tv_sec-begin_time.tv_sec+(end_time.tv_usec-begin_time.tv_usec)*1.0/1000000;
-
-			// summarize the access in the last timestamp
-			//if(count>=1)
-			//printf("timestamp=%s, stripe_count=%d\n\n",pre_timestamp,stripe_count);
-
-			// list the new access in current timestamp
-			//printf("timestamp=%s, start_stripe=%d, end_stripe=%d\n", timestamp, start_stripe, end_stripe);
 
 			// re-initiate the stripes_per_timestamp
 			memset(io_request, 0, max_accessed_stripes*(erasure_k+erasure_m));
