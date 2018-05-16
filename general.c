@@ -1446,7 +1446,7 @@ void caso_stripe_ognztn(char *trace_name,  int *analyze_chunks_time_slots, int *
 	//stripe organization
 	stripe_orgnzt(caso_crltd_mtrx, caso_crltd_dgr_mtrix, num_correlated_chunk, chunk_to_stripe_map, chunk_to_stripe_chunk_map, 
 				  chunk_to_local_group_map, crrltd_chnk_pttn_idx);
-
+ 
 
 	free(freq_peer_chks);
 	free(correlate_chunk_bucket);
