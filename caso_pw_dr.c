@@ -76,9 +76,6 @@ int main(int argc, char *argv[]){
 
   // determine the begin_timestamp
   char begin_timestamp[100];
-
-  printf("------>calculate_chunk_num\n");
-
   determine_begin_timestamp(argv[1], begin_timestamp, begin_timestamp_num);
 
   count=0;
@@ -146,11 +143,31 @@ int main(int argc, char *argv[]){
   striping_time=&g;
   continugous_time=&h; 
 
+  /* ========== Perform partial stripe writes ========= */
   psw_time_caso(argv[1],begin_timestamp, chunk_to_stripe_map, chunk_to_stripe_chunk_map, caso_time, chunk_to_local_group_map);
   psw_time_striping(argv[1], begin_timestamp, striping_time, chunk_to_local_group_map);
   psw_time_continugous(argv[1], begin_timestamp,continugous_time, chunk_to_local_group_map);
 
-  printf("caso_time=%.2lf, striping_time=%.2lf, continugous_time=%.2lf\n", *caso_time, *striping_time, *continugous_time);
+  /* Perform degraded reads */
+  int *caso_num_extra_io;
+  int c=0;
+  caso_num_extra_io=&c;
+
+  int *striping_num_extra_io;
+  int d=0;
+  striping_num_extra_io=&d;
+
+  int *continugous_num_extra_io;
+  int e=0;
+  continugous_num_extra_io=&e;
+
+  dr_time_caso(argv[1], begin_timestamp, chunk_to_stripe_map, chunk_to_stripe_chunk_map, caso_num_extra_io, caso_time); 
+  dr_time_striping(argv[1], begin_timestamp, striping_num_extra_io, striping_time);
+  dr_time_continugous(argv[1], begin_timestamp, continugous_num_extra_io, continugous_time);
+
+  printf("casp_dr_extra_io=%d, striping_dr_extra_io, continugous_dr_extra_io=%d\n", *caso_num_extra_io, *striping_num_extra_io, *continugous_num_extra_io);
+
+  //printf("caso_time=%.2lf, striping_time=%.2lf, continugous_time=%.2lf\n", *caso_time, *striping_time, *continugous_time);
   //printf("caso_psw_io/striping_psw_io=%.2lf\n", caso_psw_io*1.0/striping_io_count)
 
   free(chunk_to_stripe_map);

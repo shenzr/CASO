@@ -8,7 +8,5 @@ default:
 	$(CC) $(CFLAGS) -c general.c -o general.o 
 
 	@echo "Compile partial_stripe_writes.c"
-	$(CC) $(CFLAGS) -o partial_stripe_writes partial_stripe_writes.c general.o 
+	$(CC) $(CFLAGS) -o caso_pw_dr caso_pw_dr.c general.o 
 
-	#@echo "Compile degraded_reads.c"
-	#$(CC) $(CFLAGS) -o degraded_reads degraded_reads.c general.o 

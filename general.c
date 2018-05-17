@@ -3002,7 +3002,7 @@ close(fd_disk[i]);
 */
 
 void dr_time_caso(char *trace_name, char given_timestamp[], int *chunk_to_stripe_map, int *chunk_to_stripe_chunk_map, 
-		int *num_extra_io, double *time, int start_evlat_num){
+		int *num_extra_io, double *time){
 
 	printf("=============> dr_time_caso:\n");
 
@@ -3046,17 +3046,13 @@ void dr_time_caso(char *trace_name, char given_timestamp[], int *chunk_to_stripe
 	int *stripes_per_timestamp=malloc(sizeof(int)*max_accessed_stripes);
 	int *io_request=malloc(sizeof(int)*max_accessed_stripes*(erasure_k+erasure_m)); // it records the io request in a timestamp
 
-	// initialize the io_request
-	// if a chunk is requested in the s_i-th stripe, then the corresponding cell is marked with 1
-	for(i=0;i<max_accessed_stripes*(erasure_k+erasure_m);i++)
-		io_request[i]=0;
-
 	int stripe_count;
 	int read_count, write_count;
 	int rotation;
 	int if_dr;
 	int sort_index, real_index;
 	int *total_caso_io;
+	int flag;
 	int c=0;
 
 	total_caso_io=&c;
@@ -3070,13 +3066,8 @@ void dr_time_caso(char *trace_name, char given_timestamp[], int *chunk_to_stripe
 
 		count=0;
 		fseek(fp, 0, SEEK_SET);
+		flag=0;
 		
-		// re-initialize the io_request array
-		for(i=0; i<max_accessed_stripes*(erasure_k+erasure_m); i++)
-			io_request[i]=0;
-
-		printf("cur_rcd_idx=%d\n", cur_rcd_idx);
-
 		while(fgets(operation, sizeof(operation), fp)) {
 
 			count++;
@@ -3089,10 +3080,15 @@ void dr_time_caso(char *trace_name, char given_timestamp[], int *chunk_to_stripe
 			new_strtok(operation,divider,offset);
 			new_strtok(operation,divider,size);
 			new_strtok(operation,divider,usetime);
+
+			process_timestamp(orig_timestamp, round_timestamp);
 			
 			// if it has not reached the given_timestamp then continue
-			if(count<start_evlat_num)
+			if((strcmp(round_timestamp, given_timestamp)!=0) && (flag==0))
 				continue;
+
+			// the evaluation starts
+			flag=1;
 
 			// get the operation 
 			if(strcmp(op_type, "Read")!=0){ 
@@ -3101,47 +3097,17 @@ void dr_time_caso(char *trace_name, char given_timestamp[], int *chunk_to_stripe
 			}
 
 			read_count++;
-
-			// process timestamp, offset, and operated size
-			process_timestamp(orig_timestamp, round_timestamp);
+			
 			trnsfm_char_to_int(offset, offset_int);
 			trnsfm_char_to_int(size, size_int);
-
 			access_start_block=(*offset_int)/block_size;
 			access_end_block=(*offset_int+*size_int-1)/block_size;		
 
-			//printf("timestamp=%s, access_start_block=%d, access_end_block=%d\n",timestamp, access_start_block,access_end_block);
+			// we issue each read request immediately and initialize the io_request array
+			memset(io_request, 0, sizeof(int)*max_accessed_stripes*(erasure_k+erasure_m));
 
-			// if a new timestamp comes
-			if(strcmp(pre_timestamp, round_timestamp)!=0){
-
-				if_dr=degraded_reads(io_request, stripes_per_timestamp, stripe_count, num_extra_io, 0);
-
-				// update the total number of io requests
-				io_count+=calculate_num_io(io_request, stripe_count, erasure_k+erasure_m);
-
-				if(if_dr==1){
-
-					gettimeofday(&begin_time, NULL);
-
-					//for(i=0; i<50; i++)
-					//system_parallel_reads(io_request, stripes_per_timestamp, stripe_count, total_caso_io);
-
-					gettimeofday(&end_time, NULL);
-					*time+=(end_time.tv_sec-begin_time.tv_sec+(end_time.tv_usec-begin_time.tv_usec)*1.0/1000000)/50;
-
-				}
-
-				// re-initialize the io_request array
-				for(i=0; i<max_accessed_stripes*(erasure_k+erasure_m); i++)
-					io_request[i]=0;
-
-				// re-initiate the stripe_count
-				stripe_count=0;
-
-				strcpy(pre_timestamp, round_timestamp); 
-
-			}
+			// update io_request
+			stripe_count=0;
 
 			for(i=access_start_block; i<=access_end_block; i++){
 
@@ -3164,8 +3130,6 @@ void dr_time_caso(char *trace_name, char given_timestamp[], int *chunk_to_stripe
 					//printf("----stripe_count=%d\n",stripe_count);
 				}
 
-				// update the io_request_matrix
-
 				// if the data is on the failed disk 
 				if((temp_chunk_id+rotation)%(erasure_k+erasure_m)==failed_disk)
 					io_request[j*(erasure_k+erasure_m)+(temp_chunk_id+rotation)%(erasure_k+erasure_m)]=-1;
@@ -3179,32 +3143,23 @@ void dr_time_caso(char *trace_name, char given_timestamp[], int *chunk_to_stripe
 
 			}
 
+			// check if the read is degraded read 
+			if_dr=degraded_reads(io_request, stripes_per_timestamp, stripe_count, num_extra_io, 0);
+			io_count+=calculate_num_io(io_request, stripe_count, erasure_k+erasure_m);
+
+			if(if_dr==1){
+
+				//system_parallel_reads(io_request, stripes_per_timestamp, stripe_count, total_caso_io);
+				*time+=(end_time.tv_sec-begin_time.tv_sec+(end_time.tv_usec-begin_time.tv_usec)*1.0/1000000)/50;
+
+				}
 		}
-
-		//for the last operation, add the degraded read io
-
-		// perform degraded reads
-		if_dr=degraded_reads(io_request, stripes_per_timestamp, stripe_count, num_extra_io, 0);
-
-		if(if_dr==1){
-
-			gettimeofday(&begin_time, NULL);
-
-			//for(i=0; i<50; i++)
-			//system_parallel_reads(io_request, stripes_per_timestamp, stripe_count, total_caso_io);
-
-			gettimeofday(&end_time, NULL);
-			*time+=(end_time.tv_sec-begin_time.tv_sec+(end_time.tv_usec-begin_time.tv_usec)*1.0/1000000)/50;
-
-		}
-
-		io_count+=calculate_num_io(io_request, stripe_count, erasure_k+erasure_m);
-
 	}
 
 	printf("caso_dr_io=%d\n", io_count);
 	printf("aver_read_count=%d, aver_write_count=%d\n", read_count/(erasure_k+erasure_m), write_count/(erasure_k+erasure_m));
 	fclose(fp);	 
+	
 	free(stripes_per_timestamp);
 	free(io_request);
 
@@ -3213,7 +3168,7 @@ void dr_time_caso(char *trace_name, char given_timestamp[], int *chunk_to_stripe
 }
 
 
-void dr_time_striping(char *trace_name, char given_timestamp[], int *num_extra_io, double *time, int start_evlat_num){
+void dr_time_striping(char *trace_name, char given_timestamp[], int *num_extra_io, double *time){
 
 	printf("=============> dr_time_striping:\n");
 
@@ -3260,33 +3215,30 @@ void dr_time_striping(char *trace_name, char given_timestamp[], int *num_extra_i
 	int *stripes_per_timestamp=malloc(sizeof(int)*max_accessed_stripes);
 	int *io_request=malloc(sizeof(int)*max_accessed_stripes*(erasure_k+erasure_m)); // it records the io request in a timestamp
 
-	// initialize the io_request
-	// if a chunk is requested in the s_i-th stripe, then the corresponding cell is marked with 1
-	for(i=0;i<max_accessed_stripes*(erasure_k+erasure_m);i++)
-		io_request[i]=0;
-
 	int stripe_count;
 	int rotation;
 	int *total_caso_io;
 	int c=0;
+	int flag;
+	
 	total_caso_io=&c;
-
 	stripe_count=0;
 
 	struct timeval begin_time, end_time;
 
 	for(failed_disk=0; failed_disk< erasure_k+erasure_m; failed_disk++){
 
+		printf("failed_disk=%d\n", failed_disk);
+
 		count=0;
-
+		flag=0;
 		fseek(fp, 0, SEEK_SET);
-
-		for(i=0;i<max_accessed_stripes*(erasure_k+erasure_m);i++)
-			io_request[i]=0;
 
 		while(fgets(operation, sizeof(operation), fp)) {
 
 			count++;
+
+			//printf("count=%d\n", count);
 
 			// break the operation
 			new_strtok(operation,divider,orig_timestamp);
@@ -3297,60 +3249,30 @@ void dr_time_striping(char *trace_name, char given_timestamp[], int *num_extra_i
 			new_strtok(operation,divider,size);
 			new_strtok(operation,divider,usetime);
 
+			process_timestamp(orig_timestamp, round_timestamp);
+			
 			// if it has not reached the given_timestamp then continue
-			if(count<start_evlat_num)
+			if((strcmp(round_timestamp, given_timestamp)!=0) && (flag==0))
 				continue;
+
+			// update flag
+			flag=1;
 
 			// get the operation 
 			if(strcmp(op_type, "Read")!=0) 
 				continue;
 
-			// process timestamp, offset, and operated size
-			process_timestamp(orig_timestamp, round_timestamp);
 			trnsfm_char_to_int(offset, offset_int);
 			trnsfm_char_to_int(size, size_int);
-
 			access_start_block=(*offset_int)/block_size;
 			access_end_block=(*offset_int+*size_int-1)/block_size;		
 
-			//printf("timestamp=%s, access_start_block=%d, access_end_block=%d\n",timestamp, access_start_block,access_end_block);
+			// we issue each read request immediately and initialize the io_request array
+			memset(io_request, 0, sizeof(int)*max_accessed_stripes*(erasure_k+erasure_m));
 
-			// if a new timestamp comes
-			if(strcmp(pre_timestamp, round_timestamp)!=0){
-
-				// perform degraded reads
-				if_dr=degraded_reads(io_request, stripes_per_timestamp, stripe_count, num_extra_io, 0);
-
-				//update the total number of io requests
-				io_count+=calculate_num_io(io_request, stripe_count, erasure_k+erasure_m);
-
-				// perform system write
-				if(if_dr==1){
-
-					gettimeofday(&begin_time, NULL);
-
-					//for(i=0; i<50; i++)
-					//system_parallel_reads(io_request, stripes_per_timestamp, stripe_count, total_caso_io);
-
-					gettimeofday(&end_time, NULL);
-					*time+=(end_time.tv_sec-begin_time.tv_sec+(end_time.tv_usec-begin_time.tv_usec)*1.0/1000000)/50;
-
-				}
-
-				// re-initialize the io_request array
-				for(i=0; i<max_accessed_stripes*(erasure_k+erasure_m); i++)
-					io_request[i]=0;
-
-				// re-initiate the stripe_count
-				stripe_count=0;
-
-				strcpy(pre_timestamp, round_timestamp); 
-
-			}
-
-			// determine the stripes they belong 
-			// we compare each chunk in chunk_to_stripe_map 
-
+			// update io_requst
+			stripe_count=0;
+			
 			for(i=access_start_block; i<=access_end_block; i++){
 
 				temp_stripe_id=i/erasure_k;
@@ -3372,8 +3294,6 @@ void dr_time_striping(char *trace_name, char given_timestamp[], int *num_extra_i
 				}
 
 
-				// update the io_request_matrix
-
 				// if the data is on the failed disk 
 				if((temp_chunk_id+rotation)%(erasure_k+erasure_m)==failed_disk)
 					io_request[j*(erasure_k+erasure_m)+(temp_chunk_id+rotation)%(erasure_k+erasure_m)]=-1;
@@ -3381,35 +3301,27 @@ void dr_time_striping(char *trace_name, char given_timestamp[], int *num_extra_i
 				else 
 					io_request[j*(erasure_k+erasure_m)+(temp_chunk_id+rotation)%(erasure_k+erasure_m)]=1;
 
-
-				//printf("temp_chunk_id=%d, temp_stripe_id=%d\n", temp_chunk_id, temp_stripe_id);
-
-
 			}
 
+			// perform degraded reads
+			if_dr=degraded_reads(io_request, stripes_per_timestamp, stripe_count, num_extra_io, 0);
+			
+			//update the total number of io requests
+			io_count+=calculate_num_io(io_request, stripe_count, erasure_k+erasure_m);
+
+			// if it is a degraded read, then perform system write
+			if(if_dr==1){
+
+				gettimeofday(&begin_time, NULL);
+
+				//for(i=0; i<50; i++)
+				//system_parallel_reads(io_request, stripes_per_timestamp, stripe_count, total_caso_io);
+
+				gettimeofday(&end_time, NULL);
+				*time+=(end_time.tv_sec-begin_time.tv_sec+(end_time.tv_usec-begin_time.tv_usec)*1.0/1000000)/50;
+
+			}			
 		}
-
-		//for the last operation, add the parity update io
-
-		// perform degraded reads
-
-		if_dr=degraded_reads(io_request, stripes_per_timestamp, stripe_count, num_extra_io, 0);
-
-		if(if_dr==1){
-
-			gettimeofday(&begin_time, NULL);
-
-			//for(i=0; i<50; i++)
-			//system_parallel_reads(io_request, stripes_per_timestamp, stripe_count, total_caso_io);
-
-			gettimeofday(&end_time, NULL);
-			*time+=(end_time.tv_sec-begin_time.tv_sec+(end_time.tv_usec-begin_time.tv_usec)*1.0/1000000)/50;
-
-		}
-
-		// update the total number of io requests
-		io_count+=calculate_num_io(io_request, stripe_count, erasure_k+erasure_m);
-
 	}
 
 	printf("striping_dr_io=%d\n", io_count);
@@ -3422,7 +3334,7 @@ void dr_time_striping(char *trace_name, char given_timestamp[], int *num_extra_i
 
 }
 
-void dr_time_continugous(char *trace_name, char given_timestamp[], int *num_extra_io, double *time, int start_evlat_num){
+void dr_time_continugous(char *trace_name, char given_timestamp[], int *num_extra_io, double *time){
 
 	printf("=============> dr_time_continugous:\n");
 
@@ -3433,7 +3345,6 @@ void dr_time_continugous(char *trace_name, char given_timestamp[], int *num_extr
 		//printf("open file failed\n");
 		exit(0);
 	}
-
 
 	char operation[100];
 	char orig_timestamp[100];
@@ -3458,6 +3369,7 @@ void dr_time_continugous(char *trace_name, char given_timestamp[], int *num_extr
 	int stripe_count;
 	int temp_contiguous_block;
 	int temp_chunk_id;
+	int if_dr;
 
 	long long *size_int;
 	long long *offset_int;
@@ -3480,15 +3392,16 @@ void dr_time_continugous(char *trace_name, char given_timestamp[], int *num_extr
 
 	int *total_caso_io;
 	int c=0;
+	int flag;
+	
 	total_caso_io=&c;
-
-	stripe_count=0;
 
 	struct timeval begin_time, end_time;
 
 	for(failed_disk=0; failed_disk< erasure_k+erasure_m; failed_disk++){
 
 		count=0;
+		flag=0;
 
 		fseek(fp, 0, SEEK_SET);
 
@@ -3508,9 +3421,15 @@ void dr_time_continugous(char *trace_name, char given_timestamp[], int *num_extr
 			new_strtok(operation,divider,size);
 			new_strtok(operation,divider,usetime);
 
+			process_timestamp(orig_timestamp, round_timestamp);
+			
 			// if it has not reached the given_timestamp then continue
-			if(count<start_evlat_num)
+			if((strcmp(round_timestamp, given_timestamp)!=0) && (flag==0))
 				continue;
+
+			// update flag
+			flag=1;
+
 
 			// get the operation 
 			if(strcmp(op_type, "Read")!=0) 
@@ -3522,34 +3441,12 @@ void dr_time_continugous(char *trace_name, char given_timestamp[], int *num_extr
 			trnsfm_char_to_int(size, size_int);
 			
 			access_start_block=(*offset_int)/block_size;
-			access_end_block=(*offset_int+*size_int-1)/block_size;		
+			access_end_block=(*offset_int+*size_int-1)/block_size;	
 
-			// if a new timestamp comes
-			if(strcmp(pre_timestamp, round_timestamp)!=0){
+			// we issue each read request immediately and initialize the io_request array
+			memset(io_request, 0, sizeof(int)*max_accessed_stripes*(erasure_k+erasure_m));
 
-				// perform degraded reads
-				degraded_reads(io_request, stripes_per_timestamp, stripe_count, num_extra_io, 1);
-
-				// update the total number of io requests
-				io_count+=calculate_num_io(io_request, stripe_count, erasure_k+erasure_m);
-
-				// perform system write
-				gettimeofday(&begin_time, NULL);
-				//for(i=0; i<50; i++)
-				//system_parallel_reads(io_request, stripes_per_timestamp, stripe_count, total_caso_io);
-				gettimeofday(&end_time, NULL);
-				*time+=(end_time.tv_sec-begin_time.tv_sec+(end_time.tv_usec-begin_time.tv_usec)*1.0/1000000)/50;
-
-				// re-initialize the io_request array
-				for(i=0; i<max_accessed_stripes*(erasure_k+erasure_m); i++)
-					io_request[i]=0;
-
-				// re-initiate the stripe_count
-				stripe_count=0;
-
-				strcpy(pre_timestamp, round_timestamp); 
-
-			}
+			stripe_count=0;
 
 			// determine the stripes they belong 
 			for(i=access_start_block; i<=access_end_block; i++){
@@ -3585,31 +3482,28 @@ void dr_time_continugous(char *trace_name, char given_timestamp[], int *num_extr
 
 				else 
 					io_request[j*(erasure_k+erasure_m)+(temp_chunk_id)%(erasure_k+erasure_m)]=1;
-
-
-				//printf("temp_chunk_id=%d, temp_stripe_id=%d\n", temp_chunk_id, temp_stripe_id);
-
-
+				
 			}
 
+			// perform degraded reads
+			if_dr=degraded_reads(io_request, stripes_per_timestamp, stripe_count, num_extra_io, 1);
+
+			// update the total number of io requests
+			io_count+=calculate_num_io(io_request, stripe_count, erasure_k+erasure_m);
+
+			// if it is a degraded read, then perform system write
+			if(if_dr==1){
+
+				gettimeofday(&begin_time, NULL);
+
+				//for(i=0; i<50; i++)
+				//system_parallel_reads(io_request, stripes_per_timestamp, stripe_count, total_caso_io);
+
+				gettimeofday(&end_time, NULL);
+				*time+=(end_time.tv_sec-begin_time.tv_sec+(end_time.tv_usec-begin_time.tv_usec)*1.0/1000000)/50;
+
+			}
 		}
-
-		//for the last operation, add the parity update io
-
-		// perform degraded reads
-		degraded_reads(io_request, stripes_per_timestamp, stripe_count, num_extra_io, 1);
-
-		gettimeofday(&begin_time, NULL);
-		//for(i=0; i<50; i++){
-		//system_parallel_reads(io_request, stripes_per_timestamp, stripe_count, total_caso_io);
-		//}
-		gettimeofday(&end_time, NULL);
-		*time+=(end_time.tv_sec-begin_time.tv_sec+(end_time.tv_usec-begin_time.tv_usec)*1.0/1000000)/50;
-
-
-		// update the total number of io requests
-		io_count+=calculate_num_io(io_request, stripe_count, erasure_k+erasure_m);
-
 	}
 
 	printf("continugous_dr_io=%d\n", io_count);
