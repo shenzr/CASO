@@ -43,6 +43,29 @@ void print_matrix(int* matrix, int len, int width){
 	}
 }
 
+
+// this function is to process timestamp based on the given cached time period
+void process_timestamp(char* input_timestamp, char* output_timestamp){
+
+   int i;
+   int len;
+
+   len=0;
+   while(input_timestamp[len]!='\0')
+   	len++;
+
+   for(i=0; i<len-tm_dstnc_odr; i++)
+   	output_timestamp[i]=input_timestamp[i];
+
+   for(i=len-tm_dstnc_odr; i<len; i++)
+   	output_timestamp[i]='0';
+
+   output_timestamp[len]='\0';
+   
+}
+
+
+
 void trnsfm_char_to_int(char *char_data, long long *data){
 
 	int i=0;
@@ -148,21 +171,24 @@ void calculate_chunk_num(char *trace_name){
 
 	if((fp=fopen(trace_name,"r"))==NULL){
 		printf("ERR: open file error!\n");
-		exit(0);
+		exit(1);
 	}
 
 	char operation[100];
-	char timestamp[100];
-	char op_type[10];
-	char offset[20];
-	char size[10];
-	char divider='\t';
+	char orig_timestamp[100];
+	char round_timestamp[100];
 	char pre_timestamp[100];
+	char workload_name[10];
+	char volumn_id[5];
+    char op_type[10];
+    char offset[20];
+    char size[10];
+	char usetime[10];
+    char divider=',';
 
 	int i,j;
 	int access_start_block, access_end_block;
 	int num_distict_chunks_per_timestamp;
-
 	int count;
 	int temp_count;
 	int if_begin;
@@ -187,31 +213,34 @@ void calculate_chunk_num(char *trace_name){
 	for(i=0;i<num_assume_timestamp;i++)
 		num_distinct_chunks_timestamp[i]=0;
 
-	////printf("%s\n",pre_timestamp);
-
 	while(fgets(operation, sizeof(operation), fp)) {
 
 		count++;
 		total_num_req++;
 
-		new_strtok(operation,divider, timestamp);
-		new_strtok(operation,divider, op_type);
-		new_strtok(operation,divider, offset);
-		new_strtok(operation,divider, size);
+        // break the operation
+        new_strtok(operation,divider,orig_timestamp);
+        new_strtok(operation,divider,workload_name);
+		new_strtok(operation,divider,volumn_id);
+		new_strtok(operation,divider,op_type);
+		new_strtok(operation,divider,offset);
+        new_strtok(operation,divider,size);
+		new_strtok(operation,divider,usetime);
 
+        // process timestamp, offset, and operated size
+		process_timestamp(orig_timestamp, round_timestamp);
 		trnsfm_char_to_int(offset, offset_int);
-		access_start_block=(*offset_int)/block_size;
-
 		trnsfm_char_to_int(size, size_int);
-		access_end_block=(*offset_int+*size_int-1)/block_size;
 
+		access_start_block=(*offset_int)/block_size;
+		access_end_block=(*offset_int+*size_int-1)/block_size;
 		total_access_chunk_num += access_end_block - access_start_block + 1;
 
 		//if it is the begining of the first pattern of a timestamp, then collect the info of the last timestamp
-		if(strcmp(pre_timestamp,timestamp)!=0){
+		if(strcmp(pre_timestamp, round_timestamp)!=0){
 
 			//printf("\n%s\n",pre_timestamp);
-			strcpy(pre_timestamp,timestamp);
+			strcpy(pre_timestamp, round_timestamp);
 
 			//if it is not the first timestamp, then initialize parameters
 			if(if_begin==0){
@@ -289,6 +318,7 @@ void calculate_chunk_num(char *trace_name){
 
 void determine_begin_timestamp(char *trace_name, char begin_timestamp[], int begin_timestamp_num){
 
+	printf("------> determine_begin_timestamp\n");
 	//read the data from csv file
 	FILE *fp;
 
@@ -298,41 +328,46 @@ void determine_begin_timestamp(char *trace_name, char begin_timestamp[], int beg
 	}
 
 	char operation[100];
-	char* timestamp=NULL;
+	char orig_timestamp[100];
+	char round_timestamp[100];
 	char pre_timestamp[100];
-
+    char divider=',';
+	
 	int temp_count=0;
+	int if_begin=1;
 
 	caso_rcd_idx=0;
 
 	while(fgets(operation, sizeof(operation), fp)) {
 
-		//printf("count=%d\n",count);
-
-		timestamp=strtok(operation,"\t");
+		new_strtok(operation,divider,orig_timestamp);
+		process_timestamp(orig_timestamp, round_timestamp);
 
 		// calculate the numeber of timestamp
-		if(strcmp(pre_timestamp,timestamp)!=0){
+		if(strcmp(pre_timestamp, round_timestamp)!=0){
 
-			caso_rcd_idx+=num_distinct_chunks_timestamp[temp_count];
-			temp_count++;
+			if(if_begin==0){
 
-			if(temp_count==begin_timestamp_num){
+			   caso_rcd_idx+=num_distinct_chunks_timestamp[temp_count];
+			   temp_count++;
 
-				strcpy(begin_timestamp, timestamp);
-				break;
+			   if(temp_count==begin_timestamp_num){
 
+				  strcpy(begin_timestamp, round_timestamp);
+				  break;
+
+			    }
 			}
 
-			strcpy(pre_timestamp,timestamp);
+			else if_begin=0;
 
+			strcpy(pre_timestamp, round_timestamp);
 		}
-
 	}
 
-	//printf("test_caso_rcd_idx=%d\n", caso_rcd_idx);
-
 	fclose(fp);
+
+	printf("<------ determine_begin_timestamp\n");
 
 }
 
@@ -348,9 +383,10 @@ void calculate_caso_chunk_num(char *trace_name, char begin_timestamp[]){
 	}
 
 	char operation[100];
-	char timestamp[100];
-	char divider='\t';
+	char orig_timestamp[100];
+	char round_timestamp[100];
 	char pre_timestamp[100];
+    char divider=',';
 	int count;
 	int if_begin;
 
@@ -361,28 +397,26 @@ void calculate_caso_chunk_num(char *trace_name, char begin_timestamp[]){
 
 	while(fgets(operation, sizeof(operation), fp)) {
 
-		//printf("count=%d\n",count);
+		new_strtok(operation,divider, orig_timestamp);
+		process_timestamp(orig_timestamp, round_timestamp);
 
         //if it is the beginning of the trace
 		if(if_begin==1){
 
 			if_begin=0;
-			strcpy(pre_timestamp, timestamp);
+			strcpy(pre_timestamp, round_timestamp);
 
 			}
 
-		new_strtok(operation,divider, timestamp);
-
-		if(strcmp(pre_timestamp,timestamp)!=0){
+		if(strcmp(pre_timestamp, round_timestamp)!=0){
 
 			// calculate the numeber of timestamp
-			if(strcmp(begin_timestamp,timestamp)!=0)
+			if(strcmp(begin_timestamp, round_timestamp)!=0)
 				caso_rcd_idx+=num_distinct_chunks_timestamp[count];
-
+			
 			else break;
 
-			strcpy(pre_timestamp, timestamp);
-
+			strcpy(pre_timestamp, round_timestamp);
 			count++;
 
 		}
@@ -443,13 +477,6 @@ void replace_old_peer_chunk(int* freq_peer_chks, int* rcd_peer_chks, int* caso_p
 
 	printf("replace the old and non-correlated chunk\n");
 
-	if(given_chunk_idx>=poten_crrltd_cnt){
-
-		printf("ERR: given_chunk_idx=%d, poten_crrltd_cnt=%d\n", given_chunk_idx, poten_crrltd_cnt);
-		exit(1);
-
-		}
-	
 	//we replace the chunk according to the access time 
 	//we assume that an old access chunk that are not correlated will not be a correlated chunk any more
 	for(k=start_posi; k<max_num_peer_chunks; k++){
@@ -465,7 +492,7 @@ void replace_old_peer_chunk(int* freq_peer_chks, int* rcd_peer_chks, int* caso_p
 	}
 
 	//update the start_search_posi
-	start_search_posi[given_chunk_idx]=k+1;
+	start_search_posi[given_chunk_idx]=k;
 
 	if(k>=max_num_peer_chunks){
 
@@ -485,13 +512,6 @@ void replace_old_peer_chunk(int* freq_peer_chks, int* rcd_peer_chks, int* caso_p
 			freq_peer_chks[sort_rplcd_chk_idx*max_num_peer_chunks+k]=0;
 			//update the number of peer chunks of rplcd_chk_id
 			num_peer_chks[sort_rplcd_chk_idx]--;
-
-	if(sort_rplcd_chk_idx>=poten_crrltd_cnt){
-
-		printf("ERR: sort_rplcd_chk_idx=%d, poten_crrltd_cnt=%d\n", sort_rplcd_chk_idx, poten_crrltd_cnt);
-		exit(1);
-
-		}			
 
 			if(k<start_search_posi[sort_rplcd_chk_idx])
 				start_search_posi[sort_rplcd_chk_idx]=k;
@@ -1233,12 +1253,16 @@ void caso_stripe_ognztn(char *trace_name,  int *analyze_chunks_time_slots, int *
 	}
 
 	char operation[100];
-	char timestamp[100];
-	char op_type[10];
-	char offset[20];
-	char size[10];
-	char divider='\t';
+	char orig_timestamp[100];
+	char round_timestamp[100];
 	char pre_timestamp[100];
+	char workload_name[10];
+	char volumn_id[5];
+    char op_type[10];
+    char offset[20];
+    char size[10];
+	char usetime[10];
+    char divider=',';
 
 	int i,j;
 	int k;
@@ -1283,22 +1307,29 @@ void caso_stripe_ognztn(char *trace_name,  int *analyze_chunks_time_slots, int *
 	/* record the access chunks per timestamp in a table */
 	while(fgets(operation, sizeof(operation), fp)){
 
-		new_strtok(operation, divider, timestamp);
-		new_strtok(operation, divider, op_type);
-		new_strtok(operation, divider, offset);
-		new_strtok(operation, divider, size);
+        // break the operation
+        new_strtok(operation,divider,orig_timestamp);
+        new_strtok(operation,divider,workload_name);
+		new_strtok(operation,divider,volumn_id);
+		new_strtok(operation,divider,op_type);
+		new_strtok(operation,divider,offset);
+        new_strtok(operation,divider,size);
+		new_strtok(operation,divider,usetime);
 
+        // process timestamp, offset, and operated size
+		process_timestamp(orig_timestamp, round_timestamp);
 		trnsfm_char_to_int(offset, offset_int);
-		access_start_block=(*offset_int)/block_size;
-
 		trnsfm_char_to_int(size, size_int);
+		
+		access_start_block=(*offset_int)/block_size;
 		access_end_block=(*offset_int+*size_int-1)/block_size;
 
 		// analyze the access pattern 
 		// if it is accessed in the same timestamp
-		if(strcmp(pre_timestamp,timestamp)!=0){
+		if(strcmp(pre_timestamp, round_timestamp)!=0){
 
 			if(if_begin==0){
+				
 				num_chunk_per_timestamp[count_timestamp]=cur_index;
 				cur_index=0; 
 				count_timestamp++;
@@ -1309,7 +1340,7 @@ void caso_stripe_ognztn(char *trace_name,  int *analyze_chunks_time_slots, int *
 
 			else if_begin=0;
 
-			strcpy(pre_timestamp, timestamp);
+			strcpy(pre_timestamp, round_timestamp);
 
 		}
 
@@ -2188,12 +2219,16 @@ int psw_time_caso(char *trace_name, char given_timestamp[], int *chunk_to_stripe
 	}
 
 	char operation[100];
-	char timestamp[100];
-	char op_type[10];
-	char offset[20];
-	char size[10];
-	char divider='\t';
+	char orig_timestamp[100];
+	char round_timestamp[100];
 	char pre_timestamp[100];
+	char workload_name[10];
+	char volumn_id[5];
+    char op_type[10];
+    char offset[20];
+    char size[10];
+	char usetime[10];
+    char divider=',';
 
 	int i,j;
 	int k;	
@@ -2245,13 +2280,20 @@ int psw_time_caso(char *trace_name, char given_timestamp[], int *chunk_to_stripe
 
 		count++;
 
-		new_strtok(operation,divider, timestamp);
-		new_strtok(operation,divider, op_type);
-		new_strtok(operation,divider, offset);
-		new_strtok(operation,divider, size);
+        // break the operation
+        new_strtok(operation,divider,orig_timestamp);
+        new_strtok(operation,divider,workload_name);
+		new_strtok(operation,divider,volumn_id);
+		new_strtok(operation,divider,op_type);
+		new_strtok(operation,divider,offset);
+        new_strtok(operation,divider,size);
+		new_strtok(operation,divider,usetime);
+
+        // process timestamp, offset, and operated size
+		process_timestamp(orig_timestamp, round_timestamp);
 
 		// if it has not reached the given_timestamp then continue
-		if(strcmp(timestamp,given_timestamp)!=0 && flag==0)
+		if(strcmp(given_timestamp, round_timestamp)!=0 && flag==0)
 			continue;
 
 		// if it reaches the given timestamp
@@ -2271,7 +2313,7 @@ int psw_time_caso(char *trace_name, char given_timestamp[], int *chunk_to_stripe
 		access_end_block=(*offset_int+*size_int-1)/block_size;		
 
 		// if a new timestamp comes
-		if(strcmp(pre_timestamp,timestamp)!=0){
+		if(strcmp(pre_timestamp, round_timestamp)!=0){
 
 			// calculate the partial stripe writes in the last timestamp
 			io_count+=stripe_count*erasure_m;
@@ -2299,7 +2341,7 @@ int psw_time_caso(char *trace_name, char given_timestamp[], int *chunk_to_stripe
 			stripe_count=0;
 			lg_count=0;
 
-			strcpy(pre_timestamp,timestamp); 
+			strcpy(pre_timestamp, round_timestamp); 
 
 		}
 
@@ -2388,14 +2430,17 @@ int psw_time_striping(char *trace_name, char given_timestamp[], double *time){
 		exit(0);
 	}
 
-
 	char operation[100];
-	char *timestamp;
-	char *op_type;
-	char *offset;
-	char *size;
+	char orig_timestamp[100];
+	char round_timestamp[100];
 	char pre_timestamp[100];
-
+	char workload_name[10];
+	char volumn_id[5];
+    char op_type[10];
+    char offset[20];
+    char size[10];
+	char usetime[10];
+    char divider=',';
 
 	int i,j;
 	int k;
@@ -2446,13 +2491,20 @@ int psw_time_striping(char *trace_name, char given_timestamp[], double *time){
 	struct timeval begin_time, end_time;
 	while(fgets(operation, sizeof(operation), fp)) {
 
-		timestamp=strtok(operation,"\t");
-		op_type=strtok(NULL,"\t");
-		offset=strtok(NULL,"\t");
-		size=strtok(NULL,"\t");
+        // break the operation
+        new_strtok(operation,divider,orig_timestamp);
+        new_strtok(operation,divider,workload_name);
+		new_strtok(operation,divider,volumn_id);
+		new_strtok(operation,divider,op_type);
+		new_strtok(operation,divider,offset);
+        new_strtok(operation,divider,size);
+		new_strtok(operation,divider,usetime);
+
+        // process timestamp, offset, and operated size
+		process_timestamp(orig_timestamp, round_timestamp);
 
 		// if it has not reached the given_timestamp then continue
-		if(strcmp(timestamp,given_timestamp)!=0 && flag==0)
+		if(strcmp(given_timestamp, round_timestamp)!=0 && flag==0)
 			continue;
 
 		// if it reaches the given timestamp
@@ -2470,7 +2522,7 @@ int psw_time_striping(char *trace_name, char given_timestamp[], double *time){
 		access_end_block=(*offset_int+*size_int-1)/block_size;		
 
 		// calculate the numeber of timestamp
-		if(strcmp(pre_timestamp,timestamp)!=0){
+		if(strcmp(pre_timestamp, round_timestamp)!=0){
 
 			// calculate the partial stripe writes in the last timestamp
 			io_count+=stripe_count*erasure_m;
@@ -2493,7 +2545,7 @@ int psw_time_striping(char *trace_name, char given_timestamp[], double *time){
 			stripe_count=0;
 			lg_count=0; 
 
-			strcpy(pre_timestamp,timestamp);
+			strcpy(pre_timestamp, round_timestamp);
 
 			count++;
 			write_count++;
@@ -2521,7 +2573,6 @@ int psw_time_striping(char *trace_name, char given_timestamp[], double *time){
 			}
 
 			// record the updated info of local group
-
             if(strcmp(code_type, "lrc")==0){
 
 				lg_id=temp_chunk_id/num_chnk_per_lg;
@@ -2532,7 +2583,6 @@ int psw_time_striping(char *trace_name, char given_timestamp[], double *time){
 								lg_count++;
 				
 								}
-
             	}
 
 			// update the io_request_matrix
@@ -2590,11 +2640,16 @@ int psw_time_continugous(char *trace_name, char given_timestamp[], double *time)
 	int group_num_blocks=contiguous_block*erasure_k;
 
 	char operation[100];
-	char *timestamp;
-	char *op_type;
-	char *offset;
-	char *size;
+	char orig_timestamp[100];
+	char round_timestamp[100];
 	char pre_timestamp[100];
+	char workload_name[10];
+	char volumn_id[5];
+    char op_type[10];
+    char offset[20];
+    char size[10];
+	char usetime[10];
+    char divider=',';
 
 	int i,j;
 	int k;
@@ -2640,15 +2695,20 @@ int psw_time_continugous(char *trace_name, char given_timestamp[], double *time)
 
 		count++;
 
-		////printf("count=%d\n",count);
+        // break the operation
+        new_strtok(operation,divider,orig_timestamp);
+        new_strtok(operation,divider,workload_name);
+		new_strtok(operation,divider,volumn_id);
+		new_strtok(operation,divider,op_type);
+		new_strtok(operation,divider,offset);
+        new_strtok(operation,divider,size);
+		new_strtok(operation,divider,usetime);
 
-		timestamp=strtok(operation,"\t");
-		op_type=strtok(NULL,"\t");
-		offset=strtok(NULL,"\t");
-		size=strtok(NULL,"\t");
+        // process timestamp, offset, and operated size
+		process_timestamp(orig_timestamp, round_timestamp);
 
 		// if it has not reached the given_timestamp then continue
-		if(strcmp(timestamp,given_timestamp)!=0 && flag==0)
+		if(strcmp(given_timestamp, round_timestamp)!=0 && flag==0)
 			continue;
 
 		// if it reaches the given timestamp
@@ -2660,15 +2720,15 @@ int psw_time_continugous(char *trace_name, char given_timestamp[], double *time)
 
 		// get the access chunks 
 		trnsfm_char_to_int(offset, offset_int);
-		access_start_block=(*offset_int)/block_size;
-
 		trnsfm_char_to_int(size, size_int);
+		
 		access_end_block=(*offset_int+*size_int-1)/block_size;	
+		access_start_block=(*offset_int)/block_size;
 
 		//printf("access_start_block=%d, access_end_block=%d\n", access_start_block, access_end_block);
 
 		// calculate the numeber of timestamp
-		if(strcmp(pre_timestamp,timestamp)!=0){
+		if(strcmp(pre_timestamp, round_timestamp)!=0){
 
 			// calculate the partial stripe writes in the last timestamp
 			io_count+=stripe_count*erasure_m;
@@ -2692,7 +2752,7 @@ int psw_time_continugous(char *trace_name, char given_timestamp[], double *time)
 			stripe_count=0;
 			lg_count=0;
 
-			strcpy(pre_timestamp,timestamp);
+			strcpy(pre_timestamp, round_timestamp);
 
 		}
 
@@ -2733,7 +2793,6 @@ int psw_time_continugous(char *trace_name, char given_timestamp[], double *time)
 								lg_count++;
 				
 								}
-
             	}
 
 			// update the io_request_matrix
@@ -2744,13 +2803,6 @@ int psw_time_continugous(char *trace_name, char given_timestamp[], double *time)
 
 
 		}
-
-		//printf("timestamp=%s, start_stripe=%d, end_stripe=%d\n", timestamp, start_stripe, end_stripe);
-		//for(k=0;k<stripe_count;k++)
-		//printf("%d ",stripes_per_timestamp[k]);
-		//printf("\n");
-
-
 	}
 
 	// for the last operation
@@ -2962,12 +3014,16 @@ void dr_time_caso(char *trace_name, char given_timestamp[], int *chunk_to_stripe
 	}
 
 	char operation[100];
-	char timestamp[100];
-	char op_type[10];
-	char offset[20];
-	char size[10];
-	char divider='\t';
+	char orig_timestamp[100];
+	char round_timestamp[100];
 	char pre_timestamp[100];
+	char workload_name[10];
+	char volumn_id[5];
+    char op_type[10];
+    char offset[20];
+    char size[10];
+	char usetime[10];
+    char divider=',';
 
 	int i,j;
 	int failed_disk;
@@ -3025,12 +3081,15 @@ void dr_time_caso(char *trace_name, char given_timestamp[], int *chunk_to_stripe
 
 			count++;
 
-			new_strtok(operation, divider, timestamp);
-			new_strtok(operation, divider, op_type);
-			new_strtok(operation, divider, offset);
-			new_strtok(operation, divider, size);
-
-
+			// break the operation
+			new_strtok(operation,divider,orig_timestamp);
+			new_strtok(operation,divider,workload_name);
+			new_strtok(operation,divider,volumn_id);
+			new_strtok(operation,divider,op_type);
+			new_strtok(operation,divider,offset);
+			new_strtok(operation,divider,size);
+			new_strtok(operation,divider,usetime);
+			
 			// if it has not reached the given_timestamp then continue
 			if(count<start_evlat_num)
 				continue;
@@ -3043,17 +3102,18 @@ void dr_time_caso(char *trace_name, char given_timestamp[], int *chunk_to_stripe
 
 			read_count++;
 
-			// get the access chunks 
+			// process timestamp, offset, and operated size
+			process_timestamp(orig_timestamp, round_timestamp);
 			trnsfm_char_to_int(offset, offset_int);
-			access_start_block=(*offset_int)/block_size;
-
 			trnsfm_char_to_int(size, size_int);
+
+			access_start_block=(*offset_int)/block_size;
 			access_end_block=(*offset_int+*size_int-1)/block_size;		
 
 			//printf("timestamp=%s, access_start_block=%d, access_end_block=%d\n",timestamp, access_start_block,access_end_block);
 
 			// if a new timestamp comes
-			if(strcmp(pre_timestamp,timestamp)!=0){
+			if(strcmp(pre_timestamp, round_timestamp)!=0){
 
 				if_dr=degraded_reads(io_request, stripes_per_timestamp, stripe_count, num_extra_io, 0);
 
@@ -3079,7 +3139,7 @@ void dr_time_caso(char *trace_name, char given_timestamp[], int *chunk_to_stripe
 				// re-initiate the stripe_count
 				stripe_count=0;
 
-				strcpy(pre_timestamp,timestamp); 
+				strcpy(pre_timestamp, round_timestamp); 
 
 			}
 
@@ -3165,19 +3225,20 @@ void dr_time_striping(char *trace_name, char given_timestamp[], int *num_extra_i
 		exit(0);
 	}
 
-
 	char operation[100];
-	char timestamp[100];
-	char op_type[10];
-	char offset[20];
-	char size[10];
-	char divider='\t';
+	char orig_timestamp[100];
+	char round_timestamp[100];
+	char pre_timestamp[100];
+	char workload_name[10];
+	char volumn_id[5];
+    char op_type[10];
+    char offset[20];
+    char size[10];
+	char usetime[10];
+    char divider=',';
 
 	int i,j;
-
 	int failed_disk;
-
-	char pre_timestamp[100];
 	int access_start_block, access_end_block;
 	int count;
 	int io_count;
@@ -3227,11 +3288,14 @@ void dr_time_striping(char *trace_name, char given_timestamp[], int *num_extra_i
 
 			count++;
 
-			new_strtok(operation,divider, timestamp);
-			new_strtok(operation,divider, op_type);
-			new_strtok(operation,divider, offset);
-			new_strtok(operation,divider, size);
-
+			// break the operation
+			new_strtok(operation,divider,orig_timestamp);
+			new_strtok(operation,divider,workload_name);
+			new_strtok(operation,divider,volumn_id);
+			new_strtok(operation,divider,op_type);
+			new_strtok(operation,divider,offset);
+			new_strtok(operation,divider,size);
+			new_strtok(operation,divider,usetime);
 
 			// if it has not reached the given_timestamp then continue
 			if(count<start_evlat_num)
@@ -3241,17 +3305,18 @@ void dr_time_striping(char *trace_name, char given_timestamp[], int *num_extra_i
 			if(strcmp(op_type, "Read")!=0) 
 				continue;
 
-			// get the access chunks 
+			// process timestamp, offset, and operated size
+			process_timestamp(orig_timestamp, round_timestamp);
 			trnsfm_char_to_int(offset, offset_int);
-			access_start_block=(*offset_int)/block_size;
-
 			trnsfm_char_to_int(size, size_int);
+
+			access_start_block=(*offset_int)/block_size;
 			access_end_block=(*offset_int+*size_int-1)/block_size;		
 
 			//printf("timestamp=%s, access_start_block=%d, access_end_block=%d\n",timestamp, access_start_block,access_end_block);
 
 			// if a new timestamp comes
-			if(strcmp(pre_timestamp,timestamp)!=0){
+			if(strcmp(pre_timestamp, round_timestamp)!=0){
 
 				// perform degraded reads
 				if_dr=degraded_reads(io_request, stripes_per_timestamp, stripe_count, num_extra_io, 0);
@@ -3272,7 +3337,6 @@ void dr_time_striping(char *trace_name, char given_timestamp[], int *num_extra_i
 
 				}
 
-
 				// re-initialize the io_request array
 				for(i=0; i<max_accessed_stripes*(erasure_k+erasure_m); i++)
 					io_request[i]=0;
@@ -3280,11 +3344,7 @@ void dr_time_striping(char *trace_name, char given_timestamp[], int *num_extra_i
 				// re-initiate the stripe_count
 				stripe_count=0;
 
-				strcpy(pre_timestamp,timestamp); 
-
-				//printf("parity_update_io=%d\n",io_count);
-
-				//printf("cur_timestamp=%s\n", timestamp);
+				strcpy(pre_timestamp, round_timestamp); 
 
 			}
 
@@ -3376,12 +3436,16 @@ void dr_time_continugous(char *trace_name, char given_timestamp[], int *num_extr
 
 
 	char operation[100];
-	char timestamp[100];
-	char op_type[10];
-	char offset[20];
-	char size[10];
-	char divider='\t';
+	char orig_timestamp[100];
+	char round_timestamp[100];
 	char pre_timestamp[100];
+	char workload_name[10];
+	char volumn_id[5];
+    char op_type[10];
+    char offset[20];
+    char size[10];
+	char usetime[10];
+    char divider=',';
 
 	int i,j;
 	int failed_disk;
@@ -3435,10 +3499,14 @@ void dr_time_continugous(char *trace_name, char given_timestamp[], int *num_extr
 
 			count++;
 
-			new_strtok(operation,divider, timestamp);
-			new_strtok(operation,divider, op_type);
-			new_strtok(operation,divider, offset);
-			new_strtok(operation,divider, size);
+			// break the operation
+			new_strtok(operation,divider,orig_timestamp);
+			new_strtok(operation,divider,workload_name);
+			new_strtok(operation,divider,volumn_id);
+			new_strtok(operation,divider,op_type);
+			new_strtok(operation,divider,offset);
+			new_strtok(operation,divider,size);
+			new_strtok(operation,divider,usetime);
 
 			// if it has not reached the given_timestamp then continue
 			if(count<start_evlat_num)
@@ -3448,16 +3516,16 @@ void dr_time_continugous(char *trace_name, char given_timestamp[], int *num_extr
 			if(strcmp(op_type, "Read")!=0) 
 				continue;
 
-			// get the access chunks 
+			// process timestamp, offset, and operated size
+			process_timestamp(orig_timestamp, round_timestamp);
 			trnsfm_char_to_int(offset, offset_int);
-			access_start_block=(*offset_int)/block_size;
-
 			trnsfm_char_to_int(size, size_int);
+			
+			access_start_block=(*offset_int)/block_size;
 			access_end_block=(*offset_int+*size_int-1)/block_size;		
 
-
 			// if a new timestamp comes
-			if(strcmp(pre_timestamp,timestamp)!=0){
+			if(strcmp(pre_timestamp, round_timestamp)!=0){
 
 				// perform degraded reads
 				degraded_reads(io_request, stripes_per_timestamp, stripe_count, num_extra_io, 1);
@@ -3472,7 +3540,6 @@ void dr_time_continugous(char *trace_name, char given_timestamp[], int *num_extr
 				gettimeofday(&end_time, NULL);
 				*time+=(end_time.tv_sec-begin_time.tv_sec+(end_time.tv_usec-begin_time.tv_usec)*1.0/1000000)/50;
 
-
 				// re-initialize the io_request array
 				for(i=0; i<max_accessed_stripes*(erasure_k+erasure_m); i++)
 					io_request[i]=0;
@@ -3480,30 +3547,21 @@ void dr_time_continugous(char *trace_name, char given_timestamp[], int *num_extr
 				// re-initiate the stripe_count
 				stripe_count=0;
 
-				strcpy(pre_timestamp,timestamp); 
+				strcpy(pre_timestamp, round_timestamp); 
 
 			}
 
 			// determine the stripes they belong 
-			// we compare each chunk in chunk_to_stripe_map 
-
-			//printf("access_start_block=%d, access_end_block=%d\n",access_start_block,access_end_block);
-
 			for(i=access_start_block; i<=access_end_block; i++){
 
 				// locate the corresponding group and block_id in that group
 				temp_group_id=i/group_num_blocks;
 				temp_group_block_id=i%group_num_blocks;
-
 				temp_contiguous_block=contiguous_block;
 
-				// locate the column in that group
+				// locate the column in that group, stripe_id, and chunk_id
 				temp_row_id=temp_group_block_id%temp_contiguous_block;
-
-				// locate the stripe_id 
 				temp_stripe=temp_group_id*contiguous_block+temp_row_id; 
-
-				// locate the column_id
 				temp_chunk_id=temp_group_block_id/temp_contiguous_block;
 
 				// printf("block_id=%d, group_num_blocks=%d, temp_group_block_id=%d, contiguous_block=%d, temp_row_id=%d, temp_column_id=%d\n", i, group_num_blocks, temp_group_block_id, contiguous_block, temp_row_id, temp_chunk_id);
