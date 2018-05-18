@@ -28,7 +28,7 @@ extern int psw_time_striping(char *trace_name, char given_timestamp[], double *t
 
 extern int psw_time_continugous(char *trace_name, char given_timestamp[], double *time, int* chunk_to_local_group_map);
 
-extern int degraded_reads(int *io_request, int *stripe_id_array, int stripe_count, int *num_extra_io, int if_continugous);
+extern int degraded_reads(int *io_request, int *stripe_id_array, int stripe_count, int *num_extra_io, int if_continugous, int num_disk_stripe);
 
 extern void system_parallel_reads(int *io_matrix, int *accessed_stripes, int stripe_count, int *total_write_block_num);
 
