@@ -2237,6 +2237,7 @@ int psw_time_caso(char *trace_name, char given_timestamp[], int *chunk_to_stripe
 	int flag;
 	int io_count;
 	int temp_stripe_id, temp_chunk_id;
+	int num_disk_stripe;
 	
 	long long *size_int;
 	long long *offset_int;
@@ -2250,13 +2251,24 @@ int psw_time_caso(char *trace_name, char given_timestamp[], int *chunk_to_stripe
 	flag=0;
 	io_count=0;
 
+	// define the number of disks of a stripe for different codes
+	if(strcmp(code_type, "rs")==0)
+		num_disk_stripe=erasure_k+erasure_m;
+
+	else if(strcmp(code_type, "lrc")==0)
+		num_disk_stripe=erasure_k+lg_prty_num*lrc_lg+erasure_m;
+
+	else {
+
+		printf("ERR: input code_type\n");
+		exit(1);
+
+		}
+
 	int max_accessed_stripes=max_access_chunks_per_timestamp; // suppose the maximum accessed stripes is 100
 	int* stripes_per_timestamp=(int*)malloc(sizeof(int)*max_accessed_stripes);
 	int* lg_per_tmstmp=(int*)malloc(sizeof(int)*max_accessed_stripes*lrc_lg); 
-	int* io_request=(int*)malloc(sizeof(int)*max_accessed_stripes*(erasure_k+erasure_m)); // it records the io request in a timestamp
-
-	// initialize the io_request
-	memset(io_request, 0, sizeof(int)*max_accessed_stripes*(erasure_k+erasure_m));
+	int* io_request=(int*)malloc(sizeof(int)*max_accessed_stripes*num_disk_stripe);
 
 	int stripe_count;
 	int write_count;
@@ -2328,7 +2340,7 @@ int psw_time_caso(char *trace_name, char given_timestamp[], int *chunk_to_stripe
 			*time+=end_time.tv_sec-begin_time.tv_sec+(end_time.tv_usec-begin_time.tv_usec)*1.0/1000000;
 
 			// re-initialize the io_request array
-			memset(io_request, 0, sizeof(int)*max_accessed_stripes*(erasure_k+erasure_m));
+			memset(io_request, 0, sizeof(int)*max_accessed_stripes*num_disk_stripe);
 			memset(stripes_per_timestamp, -1, sizeof(int)*max_accessed_stripes);
 			memset(lg_per_tmstmp, 0, sizeof(int)*max_accessed_stripes*lrc_lg);
 
@@ -2379,13 +2391,20 @@ int psw_time_caso(char *trace_name, char given_timestamp[], int *chunk_to_stripe
 					}
 				}
 
-            // mark the updated data chunk and the corresponding parity chunks
-			io_request[j*(erasure_k+erasure_m)+(temp_chunk_id+rotation)%(erasure_k+erasure_m)]=1;
+            // mark the updated data chunk
+            io_request[j*num_disk_stripe+(temp_chunk_id+rotation)%num_disk_stripe]=1;
 
-			for(k=erasure_k; k<(erasure_k+erasure_m); k++)
-				io_request[j*(erasure_k+erasure_m)+(k+rotation)%(erasure_k+erasure_m)]=1;
-	
+            // mark the global parity chunks
+			for(k=num_disk_stripe-erasure_m; k<num_disk_stripe; k++)
+				io_request[j*num_disk_stripe+(k+rotation)%num_disk_stripe]=1;
 
+			// if it is lrc, then mark the local parity chunks
+			if(strcmp(code_type, "lrc")==0){
+
+				for(k=erasure_k+lg_id*lg_prty_num; k<(erasure_k+(lg_id+1)*lg_prty_num); k++)
+					io_request[j*num_disk_stripe+(k+rotation)%num_disk_stripe]=1;
+
+				}
 		}
 
 	}
@@ -2453,6 +2472,7 @@ int psw_time_striping(char *trace_name, char given_timestamp[], double *time){
 	int rotation;
 	int *total_write_block_num; 
 	int c=0;
+	int num_disk_stripe;
 
 	long long *size_int;
 	long long *offset_int;
@@ -2466,19 +2486,28 @@ int psw_time_striping(char *trace_name, char given_timestamp[], double *time){
 	flag=0;
 	io_count=0;
 
+	// define the number of disks of a stripe for different codes
+	if(strcmp(code_type, "rs")==0)
+		num_disk_stripe=erasure_k+erasure_m;
+
+	else if(strcmp(code_type, "lrc")==0)
+		num_disk_stripe=erasure_k+lg_prty_num*lrc_lg+erasure_m;
+
+	else {
+
+		printf("ERR: input code_type\n");
+		exit(1);
+
+		}
+
 	int max_accessed_stripes=max_access_chunks_per_timestamp; // the worse case is that every chunk belongs to a different stripe
 	int *stripes_per_timestamp=(int*)malloc(sizeof(int)*max_accessed_stripes);
-	int *io_request=(int*)malloc(sizeof(int)*max_accessed_stripes*(erasure_k+erasure_m)); // it records the io request in a timestamp
+	int *io_request=(int*)malloc(sizeof(int)*max_accessed_stripes*num_disk_stripe); // it records the io request in a timestamp
 	int* lg_per_tmstmp=(int*)malloc(sizeof(int)*max_accessed_stripes*lrc_lg); 
 
 	int write_count;
 	int lg_count=0, lg_id;
 	int num_chnk_per_lg; 
-
-	// initialize the io_request
-	// if a chunk is requested in the s_i-th stripe, then the corresponding cell is marked with 1
-	for(i=0;i<max_accessed_stripes*(erasure_k+erasure_m);i++)
-		io_request[i]=0;
 
 	stripe_count=0;
 	total_write_block_num=&c;
@@ -2537,7 +2566,7 @@ int psw_time_striping(char *trace_name, char given_timestamp[], double *time){
 			*time+=end_time.tv_sec-begin_time.tv_sec+(end_time.tv_usec-begin_time.tv_usec)*1.0/1000000;
 
 			// re-initiate the stripes_per_timestamp
-			memset(io_request, 0, max_accessed_stripes*(erasure_k+erasure_m));
+			memset(io_request, 0, sizeof(int)*max_accessed_stripes*num_disk_stripe);
 			memset(stripes_per_timestamp, -1, sizeof(int)*max_accessed_stripes);
 			memset(lg_per_tmstmp, 0, sizeof(int)*max_accessed_stripes*lrc_lg);
 
@@ -2585,13 +2614,21 @@ int psw_time_striping(char *trace_name, char given_timestamp[], double *time){
 								}
             	}
 
-			// update the io_request_matrix
-			io_request[j*(erasure_k+erasure_m)+(temp_chunk_id+rotation)%(erasure_k+erasure_m)]=1;
+            // mark the updated data chunk
+            io_request[j*num_disk_stripe+(temp_chunk_id+rotation)%num_disk_stripe]=1;
 
-			for(k=erasure_k; k< (erasure_k+erasure_m); k++)
-				io_request[j*(erasure_k+erasure_m)+(k+rotation)%(erasure_k+erasure_m)]=1;
+            // mark the global parity chunks
+			for(k=num_disk_stripe-erasure_m; k<num_disk_stripe; k++)
+				io_request[j*num_disk_stripe+(k+rotation)%num_disk_stripe]=1;
 
+			// if it is lrc, then mark the local parity chunks
+			if(strcmp(code_type, "lrc")==0){
 
+				for(k=erasure_k+lg_id*lg_prty_num; k<(erasure_k+(lg_id+1)*lg_prty_num); k++)
+					io_request[j*num_disk_stripe+(k+rotation)%num_disk_stripe]=1;
+
+				}
+			
 		}
 
 
@@ -2664,6 +2701,7 @@ int psw_time_continugous(char *trace_name, char given_timestamp[], double *time)
 	int temp_chunk_id;
 	int lg_id, lg_count=0;
 	int num_chnk_per_lg;
+	int num_disk_stripe;
 
 	num_chnk_per_lg=erasure_k/lrc_lg;
 
@@ -2679,11 +2717,24 @@ int psw_time_continugous(char *trace_name, char given_timestamp[], double *time)
 	flag=0;
 	io_count=0;
 
-	int max_accessed_stripes=max_access_chunks_per_timestamp; // the worse case is that every chunk belongs to a different stripe
+	// define the number of disks of a stripe for different codes
+	if(strcmp(code_type, "rs")==0)
+		num_disk_stripe=erasure_k+erasure_m;
 
+	else if(strcmp(code_type, "lrc")==0)
+		num_disk_stripe=erasure_k+lg_prty_num*lrc_lg+erasure_m;
+
+	else {
+
+		printf("ERR: input code_type\n");
+		exit(1);
+
+		}
+
+	int max_accessed_stripes=max_access_chunks_per_timestamp; // the worse case is that every chunk belongs to a different stripe
 	int *stripes_per_timestamp=malloc(sizeof(int)*max_accessed_stripes);
 	int* lg_per_tmstmp=(int*)malloc(sizeof(int)*max_accessed_stripes*lrc_lg); 
-	int *io_request=malloc(sizeof(int)*max_accessed_stripes*(erasure_k+erasure_m)); // it records the io request in a timestamp
+	int *io_request=malloc(sizeof(int)*max_accessed_stripes*num_disk_stripe); // it records the io request in a timestamp
 	int *total_write_block_num; 
 	int c=0;
 
@@ -2744,7 +2795,7 @@ int psw_time_continugous(char *trace_name, char given_timestamp[], double *time)
 			*time+=end_time.tv_sec-begin_time.tv_sec+(end_time.tv_usec-begin_time.tv_usec)*1.0/1000000;
 
 			// record the current involved stripes in this operation
-			memset(io_request, 0, max_accessed_stripes*(erasure_k+erasure_m));
+			memset(io_request, 0, sizeof(int)*max_accessed_stripes*num_disk_stripe);
 			memset(stripes_per_timestamp, -1, sizeof(int)*max_accessed_stripes);
 			memset(lg_per_tmstmp, 0, sizeof(int)*max_accessed_stripes*lrc_lg);
 
@@ -2795,13 +2846,20 @@ int psw_time_continugous(char *trace_name, char given_timestamp[], double *time)
 								}
             	}
 
-			// update the io_request_matrix
-			io_request[j*(erasure_k+erasure_m)+(temp_chunk_id)%(erasure_k+erasure_m)]=1;
+            // mark the updated data chunk
+            io_request[j*num_disk_stripe+temp_chunk_id%num_disk_stripe]=1;
 
-			for(k=erasure_k; k< (erasure_k+erasure_m); k++)
-				io_request[j*(erasure_k+erasure_m)+(k)%(erasure_k+erasure_m)]=1;
+            // mark the global parity chunks
+			for(k=num_disk_stripe-erasure_m; k<num_disk_stripe; k++)
+				io_request[j*num_disk_stripe+k%num_disk_stripe]=1;
 
+			// if it is lrc, then mark the local parity chunks
+			if(strcmp(code_type, "lrc")==0){
 
+				for(k=erasure_k+lg_id*lg_prty_num; k<(erasure_k+(lg_id+1)*lg_prty_num); k++)
+					io_request[j*num_disk_stripe+k%num_disk_stripe]=1;
+
+				}
 		}
 	}
 
@@ -2860,7 +2918,6 @@ int degraded_reads(int *io_request, int *stripe_id_array, int stripe_count, int 
 		}
 
 		// scan the io_request
-
 		for(j=0; j< erasure_k+erasure_m; j++){
 
 			// if a requested chunk is lost
@@ -3016,7 +3073,6 @@ void dr_time_caso(char *trace_name, char given_timestamp[], int *chunk_to_stripe
 	char operation[100];
 	char orig_timestamp[100];
 	char round_timestamp[100];
-	char pre_timestamp[100];
 	char workload_name[10];
 	char volumn_id[5];
     char op_type[10];
@@ -3183,7 +3239,6 @@ void dr_time_striping(char *trace_name, char given_timestamp[], int *num_extra_i
 	char operation[100];
 	char orig_timestamp[100];
 	char round_timestamp[100];
-	char pre_timestamp[100];
 	char workload_name[10];
 	char volumn_id[5];
     char op_type[10];
@@ -3237,9 +3292,7 @@ void dr_time_striping(char *trace_name, char given_timestamp[], int *num_extra_i
 		while(fgets(operation, sizeof(operation), fp)) {
 
 			count++;
-
-			//printf("count=%d\n", count);
-
+			
 			// break the operation
 			new_strtok(operation,divider,orig_timestamp);
 			new_strtok(operation,divider,workload_name);
@@ -3349,7 +3402,6 @@ void dr_time_continugous(char *trace_name, char given_timestamp[], int *num_extr
 	char operation[100];
 	char orig_timestamp[100];
 	char round_timestamp[100];
-	char pre_timestamp[100];
 	char workload_name[10];
 	char volumn_id[5];
     char op_type[10];
