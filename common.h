@@ -25,7 +25,6 @@
 
 int max_access_chunks_per_timestamp;
 int total_num_req;
-
 int trace_access_pattern[max_aces_blk_num]; // it records the accessed blocks by strictly following the trace
 int freq_access_chunk[max_aces_blk_num]; // it counts the access frequency of each chunk
 
@@ -37,6 +36,7 @@ int caso_rcd_idx; // it records the number of accessed chunks in correlation ana
 int total_access_chunk_num; // it records the number accessed in all the patterns
 int num_timestamp; // it records the number of timestamp in a trace
 int num_rele_chunks; // it records the number of relevant chunks in the trace
+int ognz_crrltd_cnt; // number of correlated chunks that are organized
 
 char code_type[5];
 

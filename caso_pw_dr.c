@@ -120,10 +120,9 @@ int main(int argc, char *argv[]){
   int* sort_caso_rcd_pattern=(int*)malloc(sizeof(int)*caso_rcd_idx); //it records the sorted values of the data for correlation analysis in CASO
   int* sort_caso_rcd_index=(int*)malloc(sizeof(int)*caso_rcd_idx);
   int* sort_caso_rcd_freq=(int*)malloc(sizeof(int)*caso_rcd_idx);
-  int* chunk_to_stripe_map=(int*)malloc(sizeof(int)*cur_rcd_idx); // it records the stripe id for each chunk
-  int* chunk_to_stripe_chunk_map=(int*)malloc(sizeof(int)*cur_rcd_idx); // it records the chunk id in the stripe for each chunk
-  int* chunk_to_local_group_map=(int*)malloc(sizeof(int)*cur_rcd_idx); // it records which local group a chunk is organized at
+  
   int orig_index;
+  int* correlated_stripe_set;
 
   for(i=0; i<caso_rcd_idx; i++)
   	sort_caso_rcd_pattern[i]=trace_access_pattern[i];
@@ -142,8 +141,8 @@ int main(int argc, char *argv[]){
   	
   gettimeofday(&bg_tm, NULL);
 
-  caso_stripe_ognztn(argv[1], analyze_chunks_time_slots, num_chunk_per_timestamp, begin_timestamp_num, sort_caso_rcd_pattern, sort_caso_rcd_index, 
-  					 sort_caso_rcd_freq, chunk_to_stripe_map, chunk_to_stripe_chunk_map, chunk_to_local_group_map);
+  correlated_stripe_set=caso_stripe_ognztn(argv[1], analyze_chunks_time_slots, num_chunk_per_timestamp, begin_timestamp_num, sort_caso_rcd_pattern, sort_caso_rcd_index, 
+  					 						sort_caso_rcd_freq);
 
   gettimeofday(&ed_tm, NULL);
 
@@ -158,7 +157,7 @@ int main(int argc, char *argv[]){
 
   /* ========== Perform partial stripe writes ========= */
   printf("+++++++++ partial stripe writes test +++++++++\n");
-  psw_time_caso(argv[1],begin_timestamp, chunk_to_stripe_map, chunk_to_stripe_chunk_map, caso_time, chunk_to_local_group_map);
+  psw_time_caso(argv[1],begin_timestamp, chunk_to_stripe_map, chunk_to_stripe_chunk_map, caso_time, chunk_to_local_group_map, correlated_stripe_set);
   psw_time_striping(argv[1], begin_timestamp, striping_time, chunk_to_local_group_map);
   psw_time_continugous(argv[1], begin_timestamp,continugous_time, chunk_to_local_group_map);
 
