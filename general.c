@@ -134,7 +134,7 @@ int if_in_trace_access_pattern(int chunk_id, int if_insert){
 
 }
 
-//find a value in a sorted array
+//find a value in an array sorted in descending order
 int binary_search(int array[], int num, int value){
 
 	int mid;
@@ -373,8 +373,11 @@ void determine_begin_timestamp(char *trace_name, char begin_timestamp[], int beg
 	char orig_timestamp[100];
 	char round_timestamp[100];
 	char pre_timestamp[100];
+	char workload_name[10];
+	char volumn_id[5];
+    char op_type[10];
     char divider=',';
-	
+
 	int temp_count=0;
 	int if_begin=1;
 
@@ -382,7 +385,14 @@ void determine_begin_timestamp(char *trace_name, char begin_timestamp[], int beg
 
 	while(fgets(operation, sizeof(operation), fp)) {
 
-		new_strtok(operation,divider,orig_timestamp);
+        new_strtok(operation,divider,orig_timestamp);
+        new_strtok(operation,divider,workload_name);
+		new_strtok(operation,divider,volumn_id);
+		new_strtok(operation,divider,op_type);
+
+		if(strcmp(op_type, "Read")==0)
+			continue;
+
 		process_timestamp(orig_timestamp, round_timestamp);
 
 		// calculate the numeber of timestamp
@@ -766,41 +776,83 @@ void extract_caso_crltd_chnk_dgr(int* caso_crltd_mtrx, int* caso_crltd_dgr_mtrix
 }
 
 // find the maximum number of correlated chunks which are smaller than the given chunk
-int find_max_crrltd_chnk_udr_bundry(int num_correlated_chunk, int* crrltd_chnk_set, int given_chunk){
+void find_max_crrltd_chnk_udr_bundry(int chunk_id, SEARCH_INFO* si){
 
 	int start,end,mid;
 
 	start=0;
-	end=num_correlated_chunk-1;
+	end=ognz_crrltd_cnt-1;
 	mid=start+(end-start)/2;
 
-	if(crrltd_chnk_set[num_correlated_chunk-1] < given_chunk)
-		return num_correlated_chunk;
+    // if the smallest correlated data chunk is larger than the chunk_id
+	if(sort_ognzd_crrltd_chnk[ognz_crrltd_cnt-1] > chunk_id){
 
-	if(crrltd_chnk_set[0] > given_chunk)
-		return 0;
+		si->search_flag=0; 
+		si->num_crrltd_chnk_bf_chnk_id=0;
 
+		return;
+		
+		}
+
+	if(sort_ognzd_crrltd_chnk[0] < chunk_id){
+
+		si->search_flag=0;
+		si->num_crrltd_chnk_bf_chnk_id=ognz_crrltd_cnt-1;
+
+		return;
+		
+		}
+
+	if(sort_ognzd_crrltd_chnk[start] == chunk_id || sort_ognzd_crrltd_chnk[end] == chunk_id){
+
+		si->search_flag=1;
+		si->num_crrltd_chnk_bf_chnk_id=-1;
+
+		return;
+
+		}
+
+    // search the chunk by using binary search
 	while(1){
 
-		if(crrltd_chnk_set[mid] > given_chunk)
+		if(sort_ognzd_crrltd_chnk[mid] > chunk_id)
+			start=mid;
+
+		else if(sort_ognzd_crrltd_chnk[mid] < chunk_id)
 			end=mid;
 
-		else if(crrltd_chnk_set[mid] < given_chunk)
-			start=mid;
+		else if(sort_ognzd_crrltd_chnk[mid] == chunk_id)
+			break;
 
 		mid=start+(end-start)/2;
 
-		//printf("start_chunk=%d, mid_chunk=%d, end_chunk=%d\n", crrltd_chnk_set[start], crrltd_chnk_set[mid], crrltd_chnk_set[end]);
+		//printf("start_chunk=%d, mid_chunk=%d, end_chunk=%d\n", sort_ognzd_crrltd_chnk[start], sort_ognzd_crrltd_chnk[mid], sort_ognzd_crrltd_chnk[end]);
 
 		if(start==mid) 
 			break;
 
 	}
 
-	if(crrltd_chnk_set[start]>given_chunk)
-		return start;
-	else
-		return start+1;
+	if(sort_ognzd_crrltd_chnk[mid] == chunk_id){
+
+		si->search_flag=1;
+		si->num_crrltd_chnk_bf_chnk_id=-1;
+
+		}
+	
+	else if(sort_ognzd_crrltd_chnk[start] > chunk_id){
+
+		si->search_flag=0;
+		si->num_crrltd_chnk_bf_chnk_id=ognz_crrltd_cnt-1-start;
+
+		}
+
+	else {
+
+		printf("ERR: search info\n");
+		exit(1);
+
+		}
 
 }
 
@@ -874,9 +926,9 @@ void updt_stripe_chnk_crrltn_dgr(int *stripe_map, int cur_chunk_num, int *temp_s
 }
 
 
-void lrc_local_group_orgnzt(int* stripe_chnk_crrltn_dgr, int* chunk_to_local_group, int* stripe_chnk_idx_in_crrltn_set, int* crrltd_chnk_pttn_idx){
+void lrc_local_group_orgnzt(int* stripe_chnk_crrltn_dgr, int* stripe_chnk_idx_in_crrltn_set, int* crrltd_chnk_pttn_idx, int stripe_id){
 
-	if((lrc_lg==0) || (erasure_k%lrc_lg!=0)){
+	if((num_lg==0) || (erasure_k%num_lg!=0)){
 
 		printf("ERR: LRC config\n");
 		exit(1);
@@ -899,14 +951,19 @@ void lrc_local_group_orgnzt(int* stripe_chnk_crrltn_dgr, int* chunk_to_local_gro
 	fir_idx=-1;
 	sec_idx=-1;
 
-	num_chunk_per_lg=erasure_k/lrc_lg;
+	num_chunk_per_lg=erasure_k/num_lg;
 
 	int* if_select=(int*)malloc(sizeof(int)*erasure_k);
 	int* slct_lg_chnk_idx=(int*)malloc(sizeof(int)*num_chunk_per_lg);
+	
+#if debug
+	printf("stripe-%d: stripe_chnk_crrltn_dgr:\n", stripe_id);
+	print_matrix(stripe_chnk_crrltn_dgr, erasure_k+1, erasure_k);
+#endif
 
 	memset(if_select, 0, sizeof(int)*erasure_k);
 
-	for(i=0; i<lrc_lg; i++){
+	for(i=0; i<num_lg; i++){
 
 		//select the first two chunks with maximum correlation degree among the remaining chunks in cur_stripe
 		max_dgr=-1;
@@ -988,9 +1045,10 @@ void lrc_local_group_orgnzt(int* stripe_chnk_crrltn_dgr, int* chunk_to_local_gro
 		for(j=0; j<num_chunk_per_lg; j++){
 
 			stripe_chunk_idx=slct_lg_chnk_idx[j];
-			crrltd_chunk_idx=stripe_chnk_idx_in_crrltn_set[stripe_chunk_idx];
-			// update the chunk_to_local_group
-			chunk_to_local_group[crrltd_chnk_pttn_idx[crrltd_chunk_idx]]=i;
+
+            // update the local group 
+			ognzd_crrltd_chnk_lg[stripe_id*erasure_k+stripe_chunk_idx]=i;
+
 		}
 
 	}
@@ -1004,8 +1062,7 @@ void lrc_local_group_orgnzt(int* stripe_chnk_crrltn_dgr, int* chunk_to_local_gro
 
 // this function takes the accessed stripes as input and outputs an array that records the stripe organization
 // it returns a pointer of the organized_correlated_data_set, whose size is ognz_crrltd_cnt*1, and is sorted in ascending order
-int* stripe_orgnzt(int* caso_crltd_mtrx, int* caso_crltd_dgr_mtrix, int num_correlated_chunk, int* chunk_to_stripe_map, 
-						int* chunk_to_stripe_chunk_map, int* chunk_to_local_group_map, int* crrltd_chnk_pttn_idx){
+void stripe_orgnzt(int* caso_crltd_mtrx, int* caso_crltd_dgr_mtrix, int num_correlated_chunk, int* crrltd_chnk_pttn_idx){
 
 	printf("===========> stripe_organization:\n");
 
@@ -1032,8 +1089,11 @@ int* stripe_orgnzt(int* caso_crltd_mtrx, int* caso_crltd_dgr_mtrix, int num_corr
 		crrltd_chnk_set[i]=caso_crltd_mtrx[i*max_num_relevent_chunks_per_chunk];
 
 #if debug
-	printf("crrltd_chnk_set:\n");
+	printf("caso_crltd_mtrx:\n");
 	print_matrix(caso_crltd_mtrx, max_num_relevent_chunks_per_chunk, num_correlated_chunk);
+
+	printf("caso_crltd_dgr_mtrix:\n");
+	print_matrix(caso_crltd_dgr_mtrix, max_num_relevent_chunks_per_chunk, num_correlated_chunk);
 #endif
 
 	// initiate the unrelevant chunks and their indices
@@ -1049,7 +1109,7 @@ int* stripe_orgnzt(int* caso_crltd_mtrx, int* caso_crltd_dgr_mtrix, int num_corr
 	int num_chunk_per_lg;
 	int if_exist_clltn;
 
-	num_chunk_per_lg=erasure_k/lrc_lg;
+	num_chunk_per_lg=erasure_k/num_lg;
 	stripe_count=0;
 	ognz_crrltd_cnt=0;
 
@@ -1058,17 +1118,17 @@ int* stripe_orgnzt(int* caso_crltd_mtrx, int* caso_crltd_dgr_mtrix, int num_corr
 
 	printf("max_crrltd_stripe=%d\n", max_crrltd_stripe);
 
-	int* ognzd_crrltd_chnk=(int*)malloc(sizeof(int)*erasure_k*max_crrltd_stripe);
-	memset(ognzd_crrltd_chnk, -1, sizeof(int)*erasure_k*max_crrltd_stripe);
-
-	// we need to arrange the chunk_to_stripe_map in ascending order
-	for(i=0;i<cur_rcd_idx;i++)
-		chunk_to_stripe_map[i]=-1;
+	sort_ognzd_crrltd_chnk=(int*)malloc(sizeof(int)*erasure_k*max_crrltd_stripe);
+	ognzd_crrltd_chnk_lg=(int*)malloc(sizeof(int)*erasure_k*max_crrltd_stripe);
+	
+	memset(sort_ognzd_crrltd_chnk, -1, sizeof(int)*erasure_k*max_crrltd_stripe);
+	memset(ognzd_crrltd_chnk_lg, -1, sizeof(int)*erasure_k*max_crrltd_stripe);
 
     // organize the correlated stripes first 
 	for(stripe_count=0; stripe_count<max_crrltd_stripe; stripe_count++){
 
 		memset(stripe_chnk_idx_in_crrltn_set, -1, sizeof(int)*erasure_k);
+		memset(stripe_chnk_crrltn_dgr, 0, sizeof(int)*(erasure_k+1)*erasure_k);
 
 		// initialize temp_stripe_idx_to_rele_chunk_table
 		for(i=0; i<erasure_k; i++)
@@ -1121,11 +1181,6 @@ int* stripe_orgnzt(int* caso_crltd_mtrx, int* caso_crltd_dgr_mtrix, int num_corr
 		if_select_correlated_chunks[first_chunk_index]=1;
 		if_select_correlated_chunks[second_chunk_index]=1;
 
-		/* insert the two chunks into the stripe */
-		// for the first chunk
-		chunk_to_stripe_map[crrltd_chnk_pttn_idx[first_chunk_index]]=stripe_count;
-		chunk_to_stripe_chunk_map[crrltd_chnk_pttn_idx[first_chunk_index]]=0;
-
 		// record the index 
 		stripe_chnk_idx_in_crrltn_set[temp_count]=first_chunk_index;
 
@@ -1134,16 +1189,12 @@ int* stripe_orgnzt(int* caso_crltd_mtrx, int* caso_crltd_dgr_mtrix, int num_corr
 		stripe_chnk_crrltn_dgr[temp_count*(erasure_k+1)]=first_chunk;
 
 		// update ognzd_crrltd_chnk
-		ognzd_crrltd_chnk[ognz_crrltd_cnt]=first_chunk;
+		sort_ognzd_crrltd_chnk[ognz_crrltd_cnt]=first_chunk;
 		ognz_crrltd_cnt++;
 
 		temp_stripe[temp_count]=first_chunk;
 		temp_stripe_idx_to_rele_chunk_table[temp_count]=first_chunk_index;
 		temp_count++;
-
-		// for the second chunk
-		chunk_to_stripe_map[crrltd_chnk_pttn_idx[second_chunk_index]]=stripe_count;
-		chunk_to_stripe_chunk_map[crrltd_chnk_pttn_idx[second_chunk_index]]=1;
 
 		// record the index 
 		stripe_chnk_idx_in_crrltn_set[temp_count]=second_chunk_index;
@@ -1154,7 +1205,7 @@ int* stripe_orgnzt(int* caso_crltd_mtrx, int* caso_crltd_dgr_mtrix, int num_corr
 		stripe_chnk_crrltn_dgr[temp_count*(erasure_k+1)+1]=temp_max; 
 
 		// update ognzd_crrltd_chnk
-		ognzd_crrltd_chnk[ognz_crrltd_cnt]=second_chunk;
+		sort_ognzd_crrltd_chnk[ognz_crrltd_cnt]=second_chunk;
 		ognz_crrltd_cnt++;
 
 		temp_stripe[temp_count]=second_chunk;
@@ -1188,9 +1239,6 @@ int* stripe_orgnzt(int* caso_crltd_mtrx, int* caso_crltd_dgr_mtrix, int num_corr
 			// if there still exists relevant chunks, then organize the chunks that owns largest priority
 			if(flag==1){
 
-				chunk_to_stripe_map[crrltd_chnk_pttn_idx[select_chunk_index]]=stripe_count;
-				chunk_to_stripe_chunk_map[crrltd_chnk_pttn_idx[select_chunk_index]]=temp_count;
-
 				//record the index 
 				stripe_chnk_idx_in_crrltn_set[temp_count]=select_chunk_index;
 
@@ -1199,7 +1247,7 @@ int* stripe_orgnzt(int* caso_crltd_mtrx, int* caso_crltd_dgr_mtrix, int num_corr
 				stripe_chnk_crrltn_dgr[temp_count*(erasure_k+1)]=select_chunk;
 
 				// update ognzd_crrltd_chnk
-				ognzd_crrltd_chnk[ognz_crrltd_cnt]=select_chunk;
+				sort_ognzd_crrltd_chnk[ognz_crrltd_cnt]=select_chunk;
 				ognz_crrltd_cnt++;
 
                 if(strcmp(code_type, "lrc")==0)
@@ -1223,74 +1271,44 @@ int* stripe_orgnzt(int* caso_crltd_mtrx, int* caso_crltd_dgr_mtrix, int num_corr
 		print_matrix(temp_stripe, erasure_k, 1);
 
 		printf("correlation degree:\n");
-		print_matrix(stripe_chnk_crrltn_dgr, (erasure_k+1), erasure_k);
-#endif		
-
+		print_matrix(stripe_chnk_crrltn_dgr, (erasure_k+1), erasure_k);		
+#endif
 		//if it is LRC, then we have to organize the chunks of a stripe into local groups
 		if(strcmp(code_type, "lrc")==0) 
-			lrc_local_group_orgnzt(stripe_chnk_crrltn_dgr, chunk_to_local_group_map, stripe_chnk_idx_in_crrltn_set, crrltd_chnk_pttn_idx);
+			lrc_local_group_orgnzt(stripe_chnk_crrltn_dgr, stripe_chnk_idx_in_crrltn_set, crrltd_chnk_pttn_idx, stripe_count);
 
 	}
 
 	printf("correlated stripes are completely organized!\n");
 	printf("ognz_crrltd_cnt=%d\n",ognz_crrltd_cnt);
 
+#if debug
+	printf("before_sort: ognzd_crrltd_chnk\n");
+	print_matrix(sort_ognzd_crrltd_chnk, ognz_crrltd_cnt, 1);
+#endif
+
+	// init the index 
+	sort_ognzd_crrltd_chnk_index=(int*)malloc(sizeof(int)*ognz_crrltd_cnt);
+
+	for(i=0; i<ognz_crrltd_cnt; i++)
+		sort_ognzd_crrltd_chnk_index[i]=i;
+
     // sort the ognzd_crrltd_chnk 
-	quick_sort_value(ognzd_crrltd_chnk, 0, ognz_crrltd_cnt-1);
-
-	printf("after_sort: ognzd_crrltd_chnk\n");
-	print_matrix(ognzd_crrltd_chnk, ognz_crrltd_cnt-1, 1);
-
-/*
-	int crrltd_stripe=stripe_count;
-
-	organize the remaining chunks after being erasure coded into stripes
-	int temp_chunk;
-	int temp_stripe_id, temp_stripe_chunk_id;
-	int num_smler_chnk;
-
-	for(i=0; i<cur_rcd_idx; i++){
-
-		temp_chunk=trace_access_pattern[i];
-
-		//find the maximum number of correlated data chunks that is smaller than temp_chunk
-		//if it is a correlated data, then continue
-		if(chunk_to_stripe_map[i]!=-1)
-			continue;
-
-		else {
-			num_smler_chnk=find_max_crrltd_chnk_udr_bundry(ognz_crrltd_cnt, ognzd_crrltd_chnk, temp_chunk);
-			printf("temp_chunk=%d, num_smler_chnk=%d\n", temp_chunk, num_smler_chnk);
-		}
-
-		// then there are num_smler_chnk-1 chunks whose offsets are smaller than temp_chunk
-		// note that the stripe_id should be larger than rele_chunk_stripe+extra_stripe_count;
-		temp_stripe_id=(temp_chunk-num_smler_chnk)/(erasure_k)+crrltd_stripe+1;
-		temp_stripe_chunk_id=(temp_chunk-num_smler_chnk)%erasure_k;
-
-		// printf("chunk_id=%d: num_smler_chnk=%d, stripe_id=%d, stripe_chunk_id=%d\n", temp_chunk, num_smler_chnk, temp_stripe_id, temp_stripe_chunk_id);
-		// record this stripe_id
-		chunk_to_stripe_map[i]=temp_stripe_id;
-		chunk_to_stripe_chunk_map[i]=temp_stripe_chunk_id;
-
-		if(strcmp(code_type, "lrc")==0)
-			chunk_to_local_group_map[i]=temp_stripe_chunk_id/num_chunk_per_lg;
-
-	}
-*/
+	QuickSort_index(sort_ognzd_crrltd_chnk, sort_ognzd_crrltd_chnk_index, 0, ognz_crrltd_cnt-1);
 
 #if debug
-	//print the chunk_stripe_map 
-	printf("chunk_to_stripe_map:\n");
-	for(i=0; i<cur_rcd_idx; i++)
-		printf("chunk_id=%d, chunk_to_stripe_map[%d]=%d\n", trace_access_pattern[i],  i, chunk_to_stripe_map[i]);
-	printf("\n");
+	printf("after_sort: sort_ognzd_crrltd_chnk\n");
+	print_matrix(sort_ognzd_crrltd_chnk, ognz_crrltd_cnt, 1);
 
-	printf("chunk_to_local_group_map:\n");
-	for(i=0; i<cur_rcd_idx; i++)
-		printf("chunk_id=%d, chunk_to_local_group_map[%d]=%d\n", trace_access_pattern[i], i, chunk_to_local_group_map[i]);
+	printf("after_sort: sort_ognzd_crrltd_chnk_index\n");
+	print_matrix(sort_ognzd_crrltd_chnk_index, ognz_crrltd_cnt, 1);
+
+	printf("after_sort: ognzd_crrltd_chnk_lg\n");
+	for(i=0; i<ognz_crrltd_cnt; i++)
+		printf("%d ",ognzd_crrltd_chnk_lg[i]);
 	printf("\n");
 #endif
+
 
 	free(if_select_correlated_chunks);
 	free(temp_stripe);
@@ -1301,12 +1319,10 @@ int* stripe_orgnzt(int* caso_crltd_mtrx, int* caso_crltd_dgr_mtrix, int num_corr
 
 	printf("<=========== stripe_organization:\n");
 
-	return ognzd_crrltd_chnk;
-
 }
 
-int* caso_stripe_ognztn(char *trace_name,  int *analyze_chunks_time_slots, int *num_chunk_per_timestamp, int bgn_tmstmp_num, int* sort_caso_rcd_pattern, 
-		int* sort_caso_rcd_index, int* sort_caso_rcd_freq, int* chunk_to_stripe_map, int* chunk_to_stripe_chunk_map, int* chunk_to_local_group_map){
+void caso_stripe_ognztn(char *trace_name,  int *analyze_chunks_time_slots, int *num_chunk_per_timestamp, int bgn_tmstmp_num, int* sort_caso_rcd_pattern, 
+		int* sort_caso_rcd_index, int* sort_caso_rcd_freq){
 
 	//read the data from csv file
 	FILE *fp;
@@ -1542,8 +1558,7 @@ int* caso_stripe_ognztn(char *trace_name,  int *analyze_chunks_time_slots, int *
 		}
 
 	//stripe organization
-	int* correlated_stripes;
-	correlated_stripes=stripe_orgnzt(caso_crltd_mtrx, caso_crltd_dgr_mtrix, num_correlated_chunk, chunk_to_stripe_map, chunk_to_stripe_chunk_map, chunk_to_local_group_map, crrltd_chnk_pttn_idx);
+	stripe_orgnzt(caso_crltd_mtrx, caso_crltd_dgr_mtrix, num_correlated_chunk, crrltd_chnk_pttn_idx);
 
 	free(freq_peer_chks);
 	free(correlate_chunk_bucket);
@@ -1554,8 +1569,6 @@ int* caso_stripe_ognztn(char *trace_name,  int *analyze_chunks_time_slots, int *
 	free(num_peer_chks);
 	free(ognzd_stripe_idx);
 	free(caso_poten_crrltd_chks);
-
-	return correlated_stripes;
 
 }
 
@@ -1641,492 +1654,6 @@ void QuickSort_index(int *data, int index[],int left, int right){
 	
 }
 
-/*
-// partial stripe writes 
-int calculate_psw_io_striping_stripe(char *trace_name, char given_timestamp[]){
-
-	//printf("=============> calculate_psw_io_striping_stripe:\n");
-
-	//read the data from csv file
-	FILE *fp;
-
-	if((fp=fopen(trace_name,"r"))==NULL){
-		//printf("open file failed\n");
-		exit(0);
-	}
-
-
-	char operation[100];
-	char *timestamp;
-	char *op_type;
-	char *offset;
-	char *size;
-	char pre_timestamp[100];
-
-	int i,j;
-	int access_start_block, access_end_block;
-	int cur_index;
-	int count;
-	int temp_count;
-	int flag;
-	int io_count;
-	int start_stripe, end_stripe;
-
-	long long *size_int;
-	long long *offset_int;
-	long long a,b;
-	a=0LL;
-	b=0LL;
-	offset_int=&a;
-	size_int=&b;
-	cur_index=0;
-	count=0;
-	temp_count=0;
-	flag=0;
-	io_count=0;
-
-	memset(pre_timestamp, '0', sizeof(char)*100);
-
-	int max_accessed_stripes=max_access_chunks_per_timestamp; // the worse case is that every chunk belongs to a different stripe
-
-	int *stripes_per_timestamp=(int*)malloc(sizeof(int)*max_accessed_stripes);
-
-	int stripe_count;
-
-	stripe_count=0;
-
-	while(fgets(operation, sizeof(operation), fp)) {
-
-		////printf("count=%d\n",count);
-
-		timestamp=strtok(operation,"\t");
-		op_type=strtok(NULL,"\t");
-		offset=strtok(NULL,"\t");
-		size=strtok(NULL,"\t");
-
-		// if it has not reached the given_timestamp then continue
-		if(strcmp(timestamp,given_timestamp)!=0 && flag==0)
-			continue;
-
-		// if it reaches the given timestamp
-		flag=1;
-
-		// get the operation 
-		if(strcmp(op_type, "Write")!=0) 
-			continue;
-
-		// get the access chunks 
-		trnsfm_char_to_int(offset, offset_int);
-		access_start_block=(*offset_int)/block_size;
-
-		trnsfm_char_to_int(size, size_int);
-		access_end_block=(*offset_int+*size_int-1)/block_size;		
-
-		// determine the stripes they belong 
-		start_stripe=access_start_block/(erasure_k);
-		end_stripe=access_end_block/(erasure_k);
-
-		//printf("offset=%lld, write_size=%d\n", *offset_int, *size_int);
-		//printf("access_start_block=%d, start_stripe=%d\n", access_start_block, start_stripe);
-		//printf("access_end_block=%d, end_stripe=%d\n", access_end_block, end_stripe);
-
-		// calculate the numeber of timestamp
-		// if it is a new timestamp, then record the operated stripes
-		if(strcmp(pre_timestamp,timestamp)!=0){
-
-			// calculate the partial stripe writes in the last timestamp
-			io_count+=stripe_count*erasure_m;
-
-			// summarize the access in the last timestamp
-			//if(count>=1)
-			//printf("timestamp=%s, stripe_count=%d\n\n",pre_timestamp,stripe_count);
-
-			// list the new access in current timestamp
-			//printf("timestamp=%s, start_stripe=%d, end_stripe=%d\n", timestamp, start_stripe, end_stripe);
-
-			// re-initiate the stripes_per_timestamp
-			for(i=0; i<max_accessed_stripes; i++)
-				stripes_per_timestamp[i]=-1;
-
-			// record the current involved stripes in this operation
-			stripe_count=end_stripe-start_stripe+1;
-
-			for(i=start_stripe;i<=end_stripe;i++)
-				stripes_per_timestamp[i-start_stripe]=i;
-
-			strcpy(pre_timestamp,timestamp);
-
-			count++;
-
-		}
-
-		// if it belongs to the same timestamp, then record the involved stripes
-		else {
-
-			for(i=start_stripe;i<=end_stripe;i++){
-
-				//printf("stripe_count=%d, cur_stripe_id=%d\n",stripe_count, i);
-
-				for(j=0;j<stripe_count;j++)
-					if(stripes_per_timestamp[j]==i)
-						break;
-
-				if(j>=stripe_count){
-
-					stripes_per_timestamp[stripe_count]=i;
-					stripe_count++;
-
-				}
-			}
-
-			//printf("timestamp=%s, start_stripe=%d, end_stripe=%d\n", timestamp, start_stripe, end_stripe);
-
-			//for(k=0;k<stripe_count;k++)
-			//printf("%d ",stripes_per_timestamp[k]);
-			//printf("\n");
-
-
-		}
-	}
-
-	//printf("timestamp=%s, stripe_count=%d\n\n",pre_timestamp,stripe_count);
-
-	// for the last operation
-	io_count+=stripe_count*erasure_m;
-
-	fclose(fp);
-	free(stripes_per_timestamp);
-
-	//printf("<============= calculate_psw_io_striping_stripe:\n");
-
-	return io_count;
-
-}
-
-int calculate_psw_io_caso_stripe(char *trace_name, char given_timestamp[], int *chunk_to_stripe_map, int* chunk_to_local_group_map){
-
-	printf("=============> calculate_psw_io_caso_stripe:\n");
-
-	//read the data from csv file
-	FILE *fp;
-
-	if((fp=fopen(trace_name,"r"))==NULL){
-		//printf("open file failed\n");
-		exit(0);
-	}
-
-
-	char operation[100];
-	char timestamp[100];
-	char op_type[10];
-	char offset[20];
-	char size[10];
-	char divider='\t';
-	char pre_timestamp[100];
-
-	int i,j;
-	int access_start_block, access_end_block;
-	int cur_index;
-	int count;
-	int temp_count;
-	int flag;
-	int io_count;
-	int sort_index, real_index;
-	int temp_stripe_id;
-	int chunk_count;
-
-	long long *size_int;
-	long long *offset_int;
-	long long a,b;
-	a=0LL;
-	b=0LL;
-	offset_int=&a;
-	size_int=&b;
-	cur_index=0;
-	count=0;
-	temp_count=0;
-	flag=0;
-	io_count=0;
-
-	int max_accessed_stripes=max_access_chunks_per_timestamp; // suppose the maximum accessed stripes is 100
-	int *stripes_per_timestamp=malloc(sizeof(int)*max_accessed_stripes);
-	int stripe_count;
-
-	stripe_count=0;
-
-	while(fgets(operation, sizeof(operation), fp)) {
-
-		count++;
-
-		new_strtok(operation,divider, timestamp);
-		new_strtok(operation,divider, op_type);
-		new_strtok(operation,divider, offset);
-		new_strtok(operation,divider, size);
-
-
-		// if it has not reached the given_timestamp then continue
-		if(strcmp(timestamp,given_timestamp)!=0 && flag==0)
-			continue;
-
-		// if it reaches the given timestamp
-		flag=1;
-
-		// get the operation 
-		if(strcmp(op_type, "Write")!=0) 
-			continue;
-
-		// get the access chunks 
-		trnsfm_char_to_int(offset, offset_int);
-		access_start_block=(*offset_int)/block_size;
-
-		trnsfm_char_to_int(size, size_int);
-		access_end_block=(*offset_int+*size_int-1)/block_size;		
-
-
-		// if a new timestamp comes
-		if(strcmp(pre_timestamp,timestamp)!=0){
-
-			// calculate the partial stripe writes in the last timestamp
-			io_count+=stripe_count*erasure_m;
-
-			//printf("timestamp=%s, stripe_count=%d\n",pre_timestamp,stripe_count);
-
-			// re-initiate the stripe_count
-			stripe_count=0;
-			chunk_count=0;
-
-			strcpy(pre_timestamp,timestamp); 
-
-		}
-
-		// determine the stripes they belong 
-		// we compare each chunk in chunk_to_stripe_map 
-
-		//printf("access_start_block=%d, access_end_block=%d\n",access_start_block,access_end_block);
-
-		for(i=access_start_block; i<=access_end_block; i++){
-
-			sort_index=binary_search(sort_trace_pattern, cur_rcd_idx, i);
-			//printf("i=%d, sort_index=%d\n", i, sort_index);
-			real_index=sort_pattern_index[sort_index];
-			temp_stripe_id=chunk_to_stripe_map[real_index];
-
-			for(j=0;j<stripe_count;j++){
-
-				if(stripes_per_timestamp[j]==temp_stripe_id)
-					break;
-
-			}
-
-			if(j>=stripe_count){
-				stripes_per_timestamp[stripe_count++]=temp_stripe_id;
-				//printf("----stripe_count=%d\n",stripe_count);
-			}
-
-			//printf("access_block_id=%d, stripe_id=%d\n", i, temp_stripe_id);
-
-
-		}
-
-	}
-
-	//for the last operation, add the parity update io
-
-	io_count+=stripe_count*erasure_m; 
-
-	printf("<============= calculate_psw_io_caso_stripe:\n");
-
-
-	fclose(fp);
-	free(stripes_per_timestamp);
-	return io_count;
-
-}
-
-
-// it calculates the caused io in partial stripe writes under contiguous data placement
-int calculate_psw_io_continugous_stripe(char *trace_name, char given_timestamp[], int max_access_block){
-
-	//printf("=============> calculate_psw_io_continugous_stripe:\n");
-
-
-	//read the data from csv file
-	FILE *fp;
-
-	if((fp=fopen(trace_name,"r"))==NULL){
-		//printf("open file failed\n");
-		exit(0);
-	}
-
-	int group_num_blocks=contiguous_block*erasure_k;
-
-
-	char operation[100];
-	char *timestamp;
-	char *op_type;
-	char *offset;
-	char *size;
-	char pre_timestamp[100];
-
-	int i,j;
-	int access_start_block, access_end_block;
-	int cur_index;
-	int count;
-	int temp_count;
-	int flag;
-	int temp_stripe, num_stripes;
-	int io_count;
-	int temp_group_id, temp_group_block_id;
-	int temp_row_id;
-	int temp=contiguous_block;
-	int stripe_count;
-
-	long long *size_int;
-	long long *offset_int;
-	long long a,b;
-	a=0LL;
-	b=0LL;
-	offset_int=&a;
-	size_int=&b;
-	cur_index=0;
-	count=0;
-	temp_count=0;
-	flag=0;
-	io_count=0;
-	stripe_count=0;
-
-	int max_accessed_stripes=max_access_chunks_per_timestamp; // the worse case is that every chunk belongs to a different stripe
-	int *stripes_per_timestamp=(int*)malloc(sizeof(int)*max_accessed_stripes);
-
-	num_stripes=max_access_block/erasure_k; // num_stripes is the maximum number of data chunks stored in a column
-
-	while(fgets(operation, sizeof(operation), fp)) {
-
-		count++;
-
-		////printf("count=%d\n",count);
-
-		timestamp=strtok(operation,"\t");
-		op_type=strtok(NULL,"\t");
-		offset=strtok(NULL,"\t");
-		size=strtok(NULL,"\t");
-
-		// if it has not reached the given_timestamp then continue
-		if(strcmp(timestamp,given_timestamp)!=0 && flag==0)
-			continue;
-
-		// if it reaches the given timestamp
-		flag=1;
-
-		// get the operation 
-		if(strcmp(op_type, "Write")!=0) 
-			continue;
-
-		// get the access chunks 
-		trnsfm_char_to_int(offset, offset_int);
-		access_start_block=(*offset_int)/block_size;
-
-		trnsfm_char_to_int(size, size_int);
-		access_end_block=(*offset_int+*size_int-1)/block_size;	
-
-		//printf("access_start_block=%d, access_end_block=%d\n", access_start_block, access_end_block);
-
-		// calculate the numeber of timestamp
-		if(strcmp(pre_timestamp,timestamp)!=0){
-
-			// calculate the partial stripe writes in the last timestamp
-			io_count+=stripe_count*erasure_m;
-
-			//printf("timestamp=%s, stripe_count=%d\n",pre_timestamp,stripe_count);
-
-			// record the current involved stripes in this operation
-
-			stripe_count=0;
-
-			for(i=access_start_block; i<=access_end_block; i++){
-
-				// locate the corresponding group and block_id in that group
-				temp_group_id=i/group_num_blocks;
-				temp_group_block_id=i%group_num_blocks;
-
-				// locate the column in that group
-				temp_row_id=temp_group_block_id%temp;
-
-				//printf("temp_group_block_id=%d, contiguous_block=%d, temp_row_id=%d\n", temp_group_block_id, contiguous_block, temp_row_id);
-
-				// locate the stripe_id 
-				temp_stripe=temp_group_id*contiguous_block+temp_row_id; 
-
-				//printf("access_block_id=%d, temp_group_id=%d, temp_row_id=%d, temp_stripe=%d\n", i, temp_group_id, temp_row_id, temp_stripe);
-
-				for(j=0;j<stripe_count;j++)
-					if(stripes_per_timestamp[j]==temp_stripe)
-						break;
-
-				if(j>=stripe_count){
-
-					stripes_per_timestamp[stripe_count]=temp_stripe;
-					stripe_count++;
-
-				}
-			}
-
-
-			strcpy(pre_timestamp,timestamp);
-
-		}
-
-		// if it belongs to the same timestamp, then record the involved stripes
-		else {
-
-			for(i=access_start_block; i<=access_end_block; i++){
-
-				// locate the corresponding group and block_id in that group
-				temp_group_id=i/group_num_blocks;
-				temp_group_block_id=i%group_num_blocks;
-
-				// locate the column in that group
-				temp_row_id=temp_group_block_id%contiguous_block;
-
-				// locate the stripe_id 
-				temp_stripe=temp_group_id*contiguous_block+temp_row_id; 
-
-				for(j=0; j<stripe_count; j++)
-					if(stripes_per_timestamp[j]==temp_stripe)
-						break;
-
-
-				if(j>=stripe_count){
-
-					stripes_per_timestamp[stripe_count]=temp_stripe;
-					stripe_count++;
-
-				}
-			}
-
-			//printf("timestamp=%s, start_stripe=%d, end_stripe=%d\n", timestamp, start_stripe, end_stripe);
-			//for(k=0;k<stripe_count;k++)
-			//printf("%d ",stripes_per_timestamp[k]);
-			//printf("\n");
-
-
-		}
-	}
-
-	// for the last operation
-	io_count+=stripe_count*erasure_m;
-
-
-	fclose(fp);
-	free(stripes_per_timestamp);
-
-	//printf("<============= calculate_psw_io_continugous_stripe:\n");
-
-
-	return io_count;
-
-}
-*/
 
 // calculate the ones in the matrix
 int calculate_chunk_num_io_matrix(int *io_matrix, int len, int width){
@@ -2148,7 +1675,7 @@ int calculate_chunk_num_io_matrix(int *io_matrix, int len, int width){
 // @stripe_count: records the number of involved stripes in a timestamp
 // @io_matrix: if a chunk is accessed, then the corresponding cell is marked as 1
 /*
-   void system_partial_stripe_writes(int *io_matrix, int *accessed_stripes, int stripe_count, int *total_write_block_num){
+void system_partial_stripe_writes(int *io_matrix, int *accessed_stripes, int stripe_count, int *total_write_block_num){
 
    int i,j;
    int io_amount;
@@ -2273,8 +1800,64 @@ close(fd_disk[i]);
 }
 */
 
-int psw_time_caso(char *trace_name, char given_timestamp[], int *chunk_to_stripe_map, int *chunk_to_stripe_chunk_map, 
-						double *time, int* chunk_to_local_group_map){
+void get_chnk_info(int chunk_id, CHUNK_INFO* chunk_info){
+
+   int max_crrltd_chnk_bf_chnk_id;
+   int crrltd_chnk_idx;
+   int temp_index;
+   int num_chunk_per_lg;
+
+   num_chunk_per_lg=erasure_k/num_lg;
+
+   // get logical_chunk_id
+   chunk_info->logical_chunk_id=chunk_id;
+
+   // get stripe_id 
+   // 1) check if the chunk is a correlated chunk that is organized; 
+   // 2) calculate the number of correlated data chunks whose chunk ids are smaller than the given chunk id
+
+   SEARCH_INFO* si=(SEARCH_INFO*)malloc(sizeof(SEARCH_INFO));
+   memset(si, 0, sizeof(SEARCH_INFO));
+
+   find_max_crrltd_chnk_udr_bundry(chunk_id, si);
+
+   if(si->search_flag==1){
+
+	temp_index=binary_search(sort_ognzd_crrltd_chnk, ognz_crrltd_cnt, chunk_id);
+	crrltd_chnk_idx=sort_ognzd_crrltd_chnk_index[temp_index];
+
+	chunk_info->stripe_id=crrltd_chnk_idx/erasure_k;
+	chunk_info->chunk_id_in_stripe=crrltd_chnk_idx%erasure_k;
+	chunk_info->lg_id=ognzd_crrltd_chnk_lg[crrltd_chnk_idx];
+	
+   	}
+
+   else {
+
+	chunk_info->stripe_id=(chunk_id - si->num_crrltd_chnk_bf_chnk_id)/erasure_k;
+	chunk_info->chunk_id_in_stripe=(chunk_id - si->num_crrltd_chnk_bf_chnk_id)%erasure_k;
+	chunk_info->lg_id=chunk_info->chunk_id_in_stripe/num_chunk_per_lg;
+	
+   	}
+
+#if debug
+   if(si->search_flag==1)
+   	printf("Correlated chunk:\n");
+
+   else 
+   	printf("Uncorrelated chunk:\n");
+   printf("chunk_info->logical_chunk_id=%d\n", chunk_info->logical_chunk_id);
+   printf("chunk_info->stripe_id=%d\n",        chunk_info->stripe_id);
+   printf("chunk_info->chunk_id_in_stripe=%d\n", chunk_info->chunk_id_in_stripe);
+   printf("chunk_info->lg_id=%d\n", chunk_info->lg_id);
+   printf("\n");
+#endif
+
+   free(si);
+
+}
+
+int psw_time_caso(char *trace_name, char given_timestamp[], double *time){
 
 	//read the data from csv file
 	FILE *fp;
@@ -2302,7 +1885,6 @@ int psw_time_caso(char *trace_name, char given_timestamp[], int *chunk_to_stripe
 	int count;
 	int flag;
 	int io_count;
-	int temp_stripe_id, temp_chunk_id;
 	int num_disk_stripe;
 	
 	long long *size_int;
@@ -2322,7 +1904,7 @@ int psw_time_caso(char *trace_name, char given_timestamp[], int *chunk_to_stripe
 		num_disk_stripe=erasure_k+erasure_m;
 
 	else if(strcmp(code_type, "lrc")==0)
-		num_disk_stripe=erasure_k+lg_prty_num*lrc_lg+erasure_m;
+		num_disk_stripe=erasure_k+lg_prty_num*num_lg+erasure_m;
 
 	else {
 
@@ -2333,7 +1915,7 @@ int psw_time_caso(char *trace_name, char given_timestamp[], int *chunk_to_stripe
 
 	int max_accessed_stripes=max_access_chunks_per_timestamp; // suppose the maximum accessed stripes is 100
 	int* stripes_per_timestamp=(int*)malloc(sizeof(int)*max_accessed_stripes);
-	int* lg_per_tmstmp=(int*)malloc(sizeof(int)*max_accessed_stripes*lrc_lg); 
+	int* lg_per_tmstmp=(int*)malloc(sizeof(int)*max_accessed_stripes*num_lg); 
 	int* io_request=(int*)malloc(sizeof(int)*max_accessed_stripes*num_disk_stripe);
 
 	int stripe_count;
@@ -2354,6 +1936,8 @@ int psw_time_caso(char *trace_name, char given_timestamp[], int *chunk_to_stripe
 
 	struct timeval begin_time, end_time;
 
+	CHUNK_INFO* chunk_info=(CHUNK_INFO*)malloc(sizeof(CHUNK_INFO));
+
 	while(fgets(operation, sizeof(operation), fp)) {
 
 		count++;
@@ -2367,6 +1951,10 @@ int psw_time_caso(char *trace_name, char given_timestamp[], int *chunk_to_stripe
         new_strtok(operation,divider,size);
 		new_strtok(operation,divider,usetime);
 
+		// get the operation 
+		if(strcmp(op_type, "Read")==0) 
+			continue;
+
         // process timestamp, offset, and operated size
 		process_timestamp(orig_timestamp, round_timestamp);
 
@@ -2376,10 +1964,6 @@ int psw_time_caso(char *trace_name, char given_timestamp[], int *chunk_to_stripe
 
 		// if it reaches the given timestamp
 		flag=1;
-
-		// get the operation 
-		if(strcmp(op_type, "Read")==0) 
-			continue;
 
 		write_count++;
 
@@ -2408,7 +1992,7 @@ int psw_time_caso(char *trace_name, char given_timestamp[], int *chunk_to_stripe
 			// re-initialize the io_request array
 			memset(io_request, 0, sizeof(int)*max_accessed_stripes*num_disk_stripe);
 			memset(stripes_per_timestamp, -1, sizeof(int)*max_accessed_stripes);
-			memset(lg_per_tmstmp, 0, sizeof(int)*max_accessed_stripes*lrc_lg);
+			memset(lg_per_tmstmp, 0, sizeof(int)*max_accessed_stripes*num_lg);
 
 			if(stripe_count>=max_accessed_stripes){
 				printf("ERR: max_accessed_stripes error!\n");
@@ -2425,49 +2009,39 @@ int psw_time_caso(char *trace_name, char given_timestamp[], int *chunk_to_stripe
 
 		for(i=access_start_block; i<=access_end_block; i++){
 
-			temp_stripe_id=get_stripe_id(i, 
+			memset(chunk_info, 0, sizeof(CHUNK_INFO));
 
-			
+			get_chnk_info(i, chunk_info); 
 
-
-
-
-
-
-			sort_index=binary_search(sort_trace_pattern, cur_rcd_idx, i);
-			real_index=sort_pattern_index[sort_index];
-			temp_stripe_id=chunk_to_stripe_map[real_index];
-
-			rotation=temp_stripe_id%num_disk_stripe;	
-			temp_chunk_id=chunk_to_stripe_chunk_map[real_index];
+			rotation=chunk_info->stripe_id%num_disk_stripe;	
 
 			for(j=0; j<stripe_count; j++){
 
-				if(stripes_per_timestamp[j]==temp_stripe_id)
+				if(stripes_per_timestamp[j]==chunk_info->stripe_id)
 					break;
 
 			}
 
 			if(j>=stripe_count){
-				stripes_per_timestamp[stripe_count]=temp_stripe_id;
+				stripes_per_timestamp[stripe_count]=chunk_info->stripe_id;
 				stripe_count++;
 			}
 
 			//check the local group
 			if(strcmp(code_type, "lrc")==0){
 
-				lg_id=chunk_to_local_group_map[real_index];
+				lg_id=chunk_info->lg_id;
 				
-				if(lg_per_tmstmp[j*lrc_lg+lg_id]==0){
+				if(lg_per_tmstmp[j*num_lg+lg_id]==0){
 				
-					lg_per_tmstmp[j*lrc_lg+lg_id]=1;
+					lg_per_tmstmp[j*num_lg+lg_id]=1;
 					lg_count++;
 				
 					}
 				}
 
             // mark the updated data chunk
-            io_request[j*num_disk_stripe+(temp_chunk_id+rotation)%num_disk_stripe]=1;
+            io_request[j*num_disk_stripe+(chunk_info->chunk_id_in_stripe+rotation)%num_disk_stripe]=1;
 
             // mark the global parity chunks
 			for(k=num_disk_stripe-erasure_m; k<num_disk_stripe; k++)
@@ -2481,7 +2055,6 @@ int psw_time_caso(char *trace_name, char given_timestamp[], int *chunk_to_stripe
 
 				}
 		}
-
 	}
 
 	//for the last operation, add the parity update io
@@ -2498,11 +2071,11 @@ int psw_time_caso(char *trace_name, char given_timestamp[], int *chunk_to_stripe
 	printf("write_count=%d\n", write_count);
 	printf("caso_parity_io=%d, total_io_num=%d\n", io_count, *total_caso_io);
 
-
 	fclose(fp);
 	free(stripes_per_timestamp);
 	free(io_request);
 	free(lg_per_tmstmp);
+	free(chunk_info);
 
 	return io_count;
 
@@ -2562,7 +2135,7 @@ int psw_time_striping(char *trace_name, char given_timestamp[], double *time){
 		num_disk_stripe=erasure_k+erasure_m;
 
 	else if(strcmp(code_type, "lrc")==0)
-		num_disk_stripe=erasure_k+lg_prty_num*lrc_lg+erasure_m;
+		num_disk_stripe=erasure_k+lg_prty_num*num_lg+erasure_m;
 
 	else {
 
@@ -2574,7 +2147,7 @@ int psw_time_striping(char *trace_name, char given_timestamp[], double *time){
 	int max_accessed_stripes=max_access_chunks_per_timestamp; // the worse case is that every chunk belongs to a different stripe
 	int *stripes_per_timestamp=(int*)malloc(sizeof(int)*max_accessed_stripes);
 	int *io_request=(int*)malloc(sizeof(int)*max_accessed_stripes*num_disk_stripe); // it records the io request in a timestamp
-	int* lg_per_tmstmp=(int*)malloc(sizeof(int)*max_accessed_stripes*lrc_lg); 
+	int* lg_per_tmstmp=(int*)malloc(sizeof(int)*max_accessed_stripes*num_lg); 
 
 	int write_count;
 	int lg_count=0, lg_id;
@@ -2584,7 +2157,7 @@ int psw_time_striping(char *trace_name, char given_timestamp[], double *time){
 	stripe_count=0;
 	total_write_block_num=&c;
 	write_count=0;
-	num_chnk_per_lg=erasure_k/lrc_lg;
+	num_chnk_per_lg=erasure_k/num_lg;
 	
 	//init the pre_timestamp as the given timestamp
 	strcpy(pre_timestamp, given_timestamp);
@@ -2601,6 +2174,10 @@ int psw_time_striping(char *trace_name, char given_timestamp[], double *time){
         new_strtok(operation,divider,size);
 		new_strtok(operation,divider,usetime);
 
+		// get the operation 
+		if(strcmp(op_type, "Read")==0) 
+			continue;
+
         // process timestamp, offset, and operated size
 		process_timestamp(orig_timestamp, round_timestamp);
 
@@ -2610,10 +2187,6 @@ int psw_time_striping(char *trace_name, char given_timestamp[], double *time){
 
 		// if it reaches the given timestamp
 		flag=1;
-
-		// get the operation 
-		if(strcmp(op_type, "Read")==0) 
-			continue;
 
 		// get the access chunks 
 		trnsfm_char_to_int(offset, offset_int);
@@ -2640,7 +2213,7 @@ int psw_time_striping(char *trace_name, char given_timestamp[], double *time){
 			// re-initiate the stripes_per_timestamp
 			memset(io_request, 0, sizeof(int)*max_accessed_stripes*num_disk_stripe);
 			memset(stripes_per_timestamp, -1, sizeof(int)*max_accessed_stripes);
-			memset(lg_per_tmstmp, 0, sizeof(int)*max_accessed_stripes*lrc_lg);
+			memset(lg_per_tmstmp, 0, sizeof(int)*max_accessed_stripes*num_lg);
 
 			// record the current involved stripes in this operation
 			stripe_count=0;
@@ -2678,9 +2251,9 @@ int psw_time_striping(char *trace_name, char given_timestamp[], double *time){
 
 				lg_id=temp_chunk_id/num_chnk_per_lg;
 
-				if(lg_per_tmstmp[j*lrc_lg+lg_id]==0){
+				if(lg_per_tmstmp[j*num_lg+lg_id]==0){
 				
-								lg_per_tmstmp[j*lrc_lg+lg_id]=1;
+								lg_per_tmstmp[j*num_lg+lg_id]=1;
 								lg_count++;
 				
 								}
@@ -2716,8 +2289,6 @@ int psw_time_striping(char *trace_name, char given_timestamp[], double *time){
 	
 	//printf("num_of_write_op=%d, total_write_block_num=%d\n", write_count, *total_write_block_num);
 	printf("psw_striping_io_count=%d\n", io_count);
-	
-	//printf("timestamp=%s, stripe_count=%d\n\n",pre_timestamp,stripe_count);
 
 	fclose(fp);
 	free(stripes_per_timestamp);
@@ -2769,7 +2340,7 @@ int psw_time_continugous(char *trace_name, char given_timestamp[], double *time)
 	int num_chnk_per_lg;
 	int num_disk_stripe;
 
-	num_chnk_per_lg=erasure_k/lrc_lg;
+	num_chnk_per_lg=erasure_k/num_lg;
 
 	long long *size_int;
 	long long *offset_int;
@@ -2789,7 +2360,7 @@ int psw_time_continugous(char *trace_name, char given_timestamp[], double *time)
 		num_disk_stripe=erasure_k+erasure_m;
 
 	else if(strcmp(code_type, "lrc")==0)
-		num_disk_stripe=erasure_k+lg_prty_num*lrc_lg+erasure_m;
+		num_disk_stripe=erasure_k+lg_prty_num*num_lg+erasure_m;
 
 	else {
 
@@ -2800,7 +2371,7 @@ int psw_time_continugous(char *trace_name, char given_timestamp[], double *time)
 
 	int max_accessed_stripes=max_access_chunks_per_timestamp; // the worse case is that every chunk belongs to a different stripe
 	int *stripes_per_timestamp=(int*)malloc(sizeof(int)*max_accessed_stripes);
-	int* lg_per_tmstmp=(int*)malloc(sizeof(int)*max_accessed_stripes*lrc_lg); 
+	int* lg_per_tmstmp=(int*)malloc(sizeof(int)*max_accessed_stripes*num_lg); 
 	int *io_request=(int*)malloc(sizeof(int)*max_accessed_stripes*num_disk_stripe); // it records the io request in a timestamp
 	int *total_write_block_num; 
 	int c=0;
@@ -2864,7 +2435,7 @@ int psw_time_continugous(char *trace_name, char given_timestamp[], double *time)
 			// record the current involved stripes in this operation
 			memset(io_request, 0, sizeof(int)*max_accessed_stripes*num_disk_stripe);
 			memset(stripes_per_timestamp, -1, sizeof(int)*max_accessed_stripes);
-			memset(lg_per_tmstmp, 0, sizeof(int)*max_accessed_stripes*lrc_lg);
+			memset(lg_per_tmstmp, 0, sizeof(int)*max_accessed_stripes*num_lg);
 
 			// record the current involved stripes in this operation
 			stripe_count=0;
@@ -2905,9 +2476,9 @@ int psw_time_continugous(char *trace_name, char given_timestamp[], double *time)
 
 				lg_id=temp_chunk_id/num_chnk_per_lg;
 
-				if(lg_per_tmstmp[j*lrc_lg+lg_id]==0){
+				if(lg_per_tmstmp[j*num_lg+lg_id]==0){
 				
-								lg_per_tmstmp[j*lrc_lg+lg_id]=1;
+								lg_per_tmstmp[j*num_lg+lg_id]=1;
 								lg_count++;
 				
 								}
@@ -2950,7 +2521,6 @@ int psw_time_continugous(char *trace_name, char given_timestamp[], double *time)
 }
 
 
-
 // given the io_request (the failed element requested is marked as -1, and the requested element that 
 // is available is marked as 1). What we do is to perform degraded reads
 // @stripe_id_array: it records the stripe id that is involved in the requests
@@ -2970,7 +2540,7 @@ int degraded_reads(int *io_request, int *stripe_id_array, int stripe_count, int 
 
 	flag=0; 
 	lg_id=-1;
-	num_chnk_per_lg=erasure_k/lrc_lg;
+	num_chnk_per_lg=erasure_k/num_lg;
 
 	for(i=0; i<stripe_count; i++){
 
@@ -3151,6 +2721,8 @@ close(fd_disk[i]);
 }
 */
 
+
+/*
 void dr_time_caso(char *trace_name, char given_timestamp[], int *chunk_to_stripe_map, int *chunk_to_stripe_chunk_map, int *num_extra_io, double *time){
 
 	//read the data from csv file
@@ -3194,7 +2766,7 @@ void dr_time_caso(char *trace_name, char given_timestamp[], int *chunk_to_stripe
 		num_disk_stripe=erasure_k+erasure_m;
 
 	else if(strcmp(code_type, "lrc")==0)
-		num_disk_stripe=erasure_k+lg_prty_num*lrc_lg+erasure_m;
+		num_disk_stripe=erasure_k+lg_prty_num*num_lg+erasure_m;
 
 	else {
 
@@ -3376,7 +2948,7 @@ void dr_time_striping(char *trace_name, char given_timestamp[], int *num_extra_i
 		num_disk_stripe=erasure_k+erasure_m;
 
 	else if(strcmp(code_type, "lrc")==0)
-		num_disk_stripe=erasure_k+lg_prty_num*lrc_lg+erasure_m;
+		num_disk_stripe=erasure_k+lg_prty_num*num_lg+erasure_m;
 
 	else {
 
@@ -3553,7 +3125,7 @@ void dr_time_continugous(char *trace_name, char given_timestamp[], int *num_extr
 		num_disk_stripe=erasure_k+erasure_m;
 
 	else if(strcmp(code_type, "lrc")==0)
-		num_disk_stripe=erasure_k+lg_prty_num*lrc_lg+erasure_m;
+		num_disk_stripe=erasure_k+lg_prty_num*num_lg+erasure_m;
 
 	else {
 
@@ -3689,7 +3261,7 @@ void dr_time_continugous(char *trace_name, char given_timestamp[], int *num_extr
 
 }
 
-
+*/
 void sorting_trace_access_pattern(){
 
 	int i;

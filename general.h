@@ -21,19 +21,17 @@ extern int calculate_chunk_num_io_matrix(int *io_matrix, int len, int width);
 
 extern void system_partial_stripe_writes(int *io_matrix, int *accessed_stripes, int stripe_count, int *total_write_block_num);
 
-extern int psw_time_caso(char *trace_name, char given_timestamp[], int *chunk_to_stripe_map, int *chunk_to_stripe_chunk_map, 
-							   double *time, int* chunk_to_local_group_map);
+extern int psw_time_caso(char *trace_name, char given_timestamp[], double *time);
 
-extern int psw_time_striping(char *trace_name, char given_timestamp[], double *time, int* chunk_to_local_group_map);
+extern int psw_time_striping(char *trace_name, char given_timestamp[], double *time);
 
-extern int psw_time_continugous(char *trace_name, char given_timestamp[], double *time, int* chunk_to_local_group_map);
+extern int psw_time_continugous(char *trace_name, char given_timestamp[], double *time);
 
 extern int degraded_reads(int *io_request, int *stripe_id_array, int stripe_count, int *num_extra_io, int if_continugous, int num_disk_stripe);
 
 extern void system_parallel_reads(int *io_matrix, int *accessed_stripes, int stripe_count, int *total_write_block_num);
 
-extern void dr_time_caso(char *trace_name, char given_timestamp[], int *chunk_to_stripe_map, int *chunk_to_stripe_chunk_map, 
-							  int *num_extra_io, double *time);
+extern void dr_time_caso(char *trace_name, char given_timestamp[], int *num_extra_io, double *time);
 
 extern void dr_time_striping(char *trace_name, char given_timestamp[], int *num_extra_io, double *time);
 
@@ -44,4 +42,4 @@ extern void sorting_trace_access_pattern();
 extern void binary_search(int array[], int num, int value);
 
 extern void caso_stripe_ognztn(char *trace_name,  int *analyze_chunks_time_slots, int *num_chunk_per_timestamp, int bgn_tmstmp_num, int* sort_caso_rcd_pattern, 
-		int* sort_caso_rcd_index, int* sort_caso_rcd_freq, int* chunk_to_stripe_map, int* chunk_to_stripe_chunk_map, int* chunk_to_local_group_map);
+		int* sort_caso_rcd_index, int* sort_caso_rcd_freq);

@@ -30,7 +30,6 @@ int main(int argc, char *argv[]){
   int temp_chunk_size_kb=chunk_size_kb_unit;
   int temp_erasure_k=erasure_k;
   int num_disk_stripe;
-  int num_lg;
   double begin_stripe_ratio; 
 
   /* ===== initialize the parameters ====== */
@@ -43,7 +42,6 @@ int main(int argc, char *argv[]){
   num_rele_chunks=0;
 
   /* ====== judge the input code_type ======*/
-  num_lg=erasure_m/lg_prty_num;
 
   if(strcmp(code_type, "rs")==0)
   	num_disk_stripe=erasure_k+erasure_m;
@@ -141,8 +139,7 @@ int main(int argc, char *argv[]){
   	
   gettimeofday(&bg_tm, NULL);
 
-  correlated_stripe_set=caso_stripe_ognztn(argv[1], analyze_chunks_time_slots, num_chunk_per_timestamp, begin_timestamp_num, sort_caso_rcd_pattern, sort_caso_rcd_index, 
-  					 						sort_caso_rcd_freq);
+  caso_stripe_ognztn(argv[1], analyze_chunks_time_slots, num_chunk_per_timestamp, begin_timestamp_num, sort_caso_rcd_pattern, sort_caso_rcd_index, sort_caso_rcd_freq);
 
   gettimeofday(&ed_tm, NULL);
 
@@ -157,9 +154,9 @@ int main(int argc, char *argv[]){
 
   /* ========== Perform partial stripe writes ========= */
   printf("+++++++++ partial stripe writes test +++++++++\n");
-  psw_time_caso(argv[1],begin_timestamp, chunk_to_stripe_map, chunk_to_stripe_chunk_map, caso_time, chunk_to_local_group_map, correlated_stripe_set);
-  psw_time_striping(argv[1], begin_timestamp, striping_time, chunk_to_local_group_map);
-  psw_time_continugous(argv[1], begin_timestamp,continugous_time, chunk_to_local_group_map);
+  psw_time_caso(argv[1],begin_timestamp, caso_time);
+  psw_time_striping(argv[1], begin_timestamp, striping_time);
+  //psw_time_continugous(argv[1], begin_timestamp,continugous_time);
 
   /* ========== Perform degraded reads ========= */
   int *caso_num_extra_io;
@@ -175,22 +172,35 @@ int main(int argc, char *argv[]){
   continugous_num_extra_io=&e;
 
   printf("+++++++++ degraded read test +++++++++\n");
-  dr_time_caso(argv[1], begin_timestamp, chunk_to_stripe_map, chunk_to_stripe_chunk_map, caso_num_extra_io, caso_time); 
-  dr_time_striping(argv[1], begin_timestamp, striping_num_extra_io, striping_time);
-  dr_time_continugous(argv[1], begin_timestamp, continugous_num_extra_io, continugous_time);
+  //dr_time_caso(argv[1], begin_timestamp, caso_num_extra_io, caso_time); 
+  //dr_time_striping(argv[1], begin_timestamp, striping_num_extra_io, striping_time);
+  //dr_time_continugous(argv[1], begin_timestamp, continugous_num_extra_io, continugous_time);
 
   printf("caso_dr_extra_io_per_disk_failure=%.2lf, striping_dr_extra_io_per_disk_failure=%.2lf, continugous_dr_extra_io_per_disk_failure=%.2lf\n", 
   		(*caso_num_extra_io)*1.0/num_disk_stripe, (*striping_num_extra_io)*1.0/num_disk_stripe, (*continugous_num_extra_io)*1.0/num_disk_stripe);
 
-  free(chunk_to_stripe_map);
-  free(chunk_to_stripe_chunk_map);
+#if debug
+  printf("after_sort: ognzd_crrltd_chnk\n");
+  print_matrix(sort_ognzd_crrltd_chnk, ognz_crrltd_cnt, 1);
+
+  printf("after_sort: ognzd_crrltd_chnk_index\n");
+  print_matrix(sort_ognzd_crrltd_chnk_index, ognz_crrltd_cnt, 1);
+
+  printf("after_sort: ognzd_crrltd_chnk_lg\n");
+  for(i=0; i<ognz_crrltd_cnt; i++)
+	  printf("%d ",ognzd_crrltd_chnk_lg[i]);
+  printf("\n");
+#endif
+
   free(num_chunk_per_timestamp);
   free(analyze_chunks_time_slots);
   free(sort_caso_rcd_pattern);
   free(sort_caso_rcd_index);
   free(access_time_slots_index);
-  free(chunk_to_local_group_map);
   free(sort_caso_rcd_freq);
+  free(sort_ognzd_crrltd_chnk);
+  free(sort_ognzd_crrltd_chnk_index);
+  free(ognzd_crrltd_chnk_lg);
 
   return 0;
 
