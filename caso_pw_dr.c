@@ -35,7 +35,6 @@ int main(int argc, char *argv[]){
   /* ===== initialize the parameters ====== */
   begin_stripe_ratio=atoi(argv[2])*1.0/100;
   strcpy(code_type, argv[3]);
-  cur_rcd_idx=0;
   total_access_chunk_num=0;
   num_timestamp=0;
   max_access_chunks_per_timestamp=-1;
@@ -58,16 +57,12 @@ int main(int argc, char *argv[]){
   
   struct timeval bg_tm, ed_tm;
 
-  for(i=0;i<max_aces_blk_num;i++)
-  	trace_access_pattern[i]=-1;
+  memset(access_bucket, -1, sizeof(int)*max_aces_blk_num);
+  memset(order_access_bucket, 0, sizeof(int)*max_aces_blk_num);
+  memset(trace_access_pattern, -1, sizeof(int)*max_aces_blk_num);
+  memset(freq_access_chunk, 0, sizeof(int)*max_aces_blk_num);
 
-  for(i=0;i<max_aces_blk_num;i++)
-  	freq_access_chunk[i]=0;
-
-  printf("------>calculate_chunk_num\n");
   calculate_chunk_num(argv[1]);
-  sorting_trace_access_pattern();
-  printf("<------calculate_chunk_num\n");
 
   int count_larger_2=0;
   count=0;
@@ -94,20 +89,6 @@ int main(int argc, char *argv[]){
   for(i=0; i<caso_rcd_idx; i++)
   	if(freq_access_chunk[i]>=2)
 		count++;
-
-  printf("caso_rcd(freq>=2)=%d\n", count);
-
-  printf("begin_timestamp=%s, begin_timestamp_num=%d\n", begin_timestamp, begin_timestamp_num);
-  printf("<------calculate_chunk_num\n");
-
-  int max_access_chunk=sort_trace_pattern[0];
-
-  printf("max_access_chunk/temp_erasure_k=%d, disk_capacity=%d\n", max_access_chunk/temp_erasure_k, disk_capacity/temp_chunk_size_kb);
-
-  if(max_access_chunk/temp_erasure_k > disk_capacity){
-	  printf("max_access_chunk exceeds disk_capacity!, max_access_chunk=%d, disk_capacity=%d\n", max_access_chunk/temp_erasure_k, disk_capacity);
-	  exit(1);
-  	}
 
   printf("max_access_chunks_per_timestamp=%d\n", max_access_chunks_per_timestamp);
 

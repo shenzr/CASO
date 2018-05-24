@@ -94,13 +94,12 @@ int calculate_num_io(int *io_request, int col, int width){
 }
 
 
-/* this function is to check if a chunk is recorded, if not, then insert the  */
-int if_in_trace_access_pattern(int chunk_id, int if_insert){
+/* this function is to check if a chunk is recorded, if then return 0, else insert the chunk and return 1*/
+int check_if_in_access_bucket(int chunk_id){
 
    int bucket_width;
    int bucket_id;
-   int flag;
-
+   
    bucket_width=max_aces_blk_num/bucket_depth;
    
    bucket_id=chunk_id%bucket_width;
@@ -113,24 +112,33 @@ int if_in_trace_access_pattern(int chunk_id, int if_insert){
 	addr=bucket_id*bucket_depth+i;
 
     // if the chunk is recorded
-	if(trace_access_pattern[i]==chunk_id){
-
-		flag=1;
-		break;
-		}
-
-    
-	if(trace_access_pattern[i]==-1 && if_insert==1){
-
-        flag=0;
-		trace_access_pattern[i]=chunk_id;
+	if(access_bucket[addr]==chunk_id)
 		break;
 
-		}
-	
+	// if the chunk is not recorded
+	if(access_bucket[addr]==-1)
+		break;
    	}
 
-   return flag;
+   if(i>=bucket_depth){
+
+	printf("ERR: bucket_depth is exhausted\n");
+	exit(1);
+
+   	}
+
+   if(access_bucket[addr]==chunk_id)
+   	return order_access_bucket[addr];
+
+   else{
+
+	//record the chunk and its access order 
+	access_bucket[addr]=chunk_id;
+	order_access_bucket[addr]=cur_rcd_idx;
+	
+	return -1;
+	
+   	}
 
 }
 
@@ -233,6 +241,7 @@ void calculate_chunk_num(char *trace_name){
 	int count;
 	int temp_count;
 	int if_begin;
+	int ret;
 
 	long long *size_int;
 	long long *offset_int;
@@ -250,6 +259,7 @@ void calculate_chunk_num(char *trace_name){
 	//the max_access_chunks_per_timestamp is not the exact value, it did not consider the multiple accesses 
 	//to a chunk within a timestamp
 	max_access_chunks_per_timestamp=-1;
+	cur_rcd_idx=0;
 
 	memset(num_distinct_chunks_timestamp, 0, sizeof(int)*num_assume_timestamp);
 
@@ -258,7 +268,7 @@ void calculate_chunk_num(char *trace_name){
 		count++;
 		total_num_req++;
 
-		if(total_num_req%1000==0)
+		if(total_num_req%10000==0)
 			printf("total_num_req=%d, cur_rcd_idx=%d\n", total_num_req, cur_rcd_idx);
 
         // break the operation
@@ -318,29 +328,31 @@ void calculate_chunk_num(char *trace_name){
 
 		for(i=access_start_block; i<=access_end_block; i++){
 
-			for(j=0; j<cur_rcd_idx; j++){
-				if(trace_access_pattern[j]==i){
-					freq_access_chunk[j]++;
-					break;
-				}
-			}
+			ret=check_if_in_access_bucket(i);
 
-			if(j>=cur_rcd_idx){
-				trace_access_pattern[cur_rcd_idx]=i;
+            // if the chunk is not recorded before
+			if(ret==-1){
+
+				//increase the access freq
 				freq_access_chunk[cur_rcd_idx]++;
-				num_distict_chunks_per_timestamp++;
+				trace_access_pattern[cur_rcd_idx]=i;
 				cur_rcd_idx++;
+				num_distict_chunks_per_timestamp++;
+				
+				}
 
-				if(cur_rcd_idx>=max_aces_blk_num){
+            // if the chunk is recorded before, then only increase its access frequency
+			else if(ret!=-1)
+				freq_access_chunk[ret]++;
 
-					printf("ERR: cur_rcd_idx>=max_aces_blk_num\n");
-					exit(0);
-
-					}
+		    if(cur_rcd_idx>=max_aces_blk_num){
+		
+			    printf("ERR: cur_rcd_idx>=max_aces_blk_num\n");
+			    exit(0);
+		
 			}
+
 		}
-
-
 	}
 
 	// for the access pattern in the last timestamp
@@ -3262,18 +3274,5 @@ void dr_time_continugous(char *trace_name, char given_timestamp[], int *num_extr
 }
 
 */
-void sorting_trace_access_pattern(){
 
-	int i;
-
-	for(i=0; i<cur_rcd_idx; i++){
-
-		sort_trace_pattern[i]=trace_access_pattern[i];
-		sort_pattern_index[i]=i;
-
-	}
-
-	QuickSort_index(sort_trace_pattern, sort_pattern_index, 0, cur_rcd_idx-1);
-
-}
 

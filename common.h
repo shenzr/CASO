@@ -1,8 +1,8 @@
 #ifndef _COMMON_H
 #define _COMMON_H
 
-#define erasure_k 4
-#define erasure_m 2
+#define erasure_k 8
+#define erasure_m 4
 
 #define num_lg 2 // the number of local groups in a stripe, it should be divisible by erasure_m and erasure_k
 #define lg_prty_num erasure_m/num_lg  // the number of local parity in a local group 
@@ -23,14 +23,14 @@
 #define clean_cache_read_block_num 100 // it defines the number of blocks read for cleaning cache in the main memory
 #define debug 0
 
-int max_access_chunks_per_timestamp;
-int total_num_req;
+int access_bucket[max_aces_blk_num]; // it records the accessed chunks 
+int order_access_bucket[max_aces_blk_num];  // it records the access frequency of each chunk 
+
 int trace_access_pattern[max_aces_blk_num]; // it records the accessed blocks by strictly following the trace
 int freq_access_chunk[max_aces_blk_num]; // it counts the access frequency of each chunk
 
-int sort_trace_pattern[max_aces_blk_num]; //it is the sorted result of trace_access_pattern
-int sort_pattern_index[max_aces_blk_num]; //it records the original index of the chunk in trace_access_pattern
-
+int max_access_chunks_per_timestamp;
+int total_num_req;
 int cur_rcd_idx; // it records the number of access blocks recorded in the trace
 int caso_rcd_idx; // it records the number of accessed chunks in correlation analysis
 int total_access_chunk_num; // it records the number accessed in all the patterns
