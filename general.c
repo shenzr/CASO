@@ -43,6 +43,16 @@ void print_matrix(int* matrix, int len, int width){
 	}
 }
 
+void print_chunk_info(CHUNK_INFO* chunk_info){
+
+    printf("chunk_info:\n");
+	printf("chunk_info->logical_chunk_id = %d\n", chunk_info->logical_chunk_id);
+	printf("chunk_info->stripe_id = %d\n", chunk_info->stripe_id);
+	printf("chunk_info->chunk_id_in_stripe = %d\n", chunk_info->chunk_id_in_stripe);
+	printf("chunk_info->lg_id = %d\n", chunk_info->lg_id);
+	printf("\n");
+
+}
 
 // this function is to process timestamp based on the given cached time period
 void process_timestamp(char* input_timestamp, char* output_timestamp){
@@ -92,6 +102,20 @@ int calculate_num_io(int *io_request, int col, int width){
 	return num;
 
 }
+
+int calculate_extra_io(int *io_request, int col, int width){
+
+    int num=0;
+	int i;
+
+	for(i=0; i<col*width; i++)
+		if(io_request[i]==2)
+			num++;
+		
+	return num;
+
+}
+
 
 
 /* this function is to check if a chunk is recorded, if then return 0, else insert the chunk and return 1*/
@@ -177,6 +201,48 @@ int binary_search(int array[], int num, int value){
 
 }
 
+// it sorts the unrelevant chunks according to their access frequencies
+// the function is to sort the array and move the corresponding index to the new position;
+void QuickSort_index(int data[], int index[],int left, int right){
+	int temp = data[left];
+	int p = left;
+	int temp_value=index[left];
+	int i = left, j = right;
+
+	while (i <= j)
+	{
+		while (data[j] <= temp && j >= p)
+			j--;
+		if(j >= p)
+		{
+			data[p] = data[j];
+			index[p]=index[j];
+			p = j;
+		}
+
+		while (data[i] >= temp && i <= p)
+			i++;
+		if (i <= p)
+		{
+			data[p] = data[i];
+			index[p]=index[i];
+			p = i;
+		}
+	}
+
+	data[p] = temp;
+	index[p]=temp_value;
+
+	////printf{""}
+	//for(i=left;i<=right;i++) //printf("%d ",index[i]);
+	////printf("\n");
+
+	if(p - left > 1)
+		QuickSort_index(data, index, left, p-1);
+	if(right - p > 1)
+		QuickSort_index(data, index, p+1, right);
+	
+}
 
 /* this function truncate a component from a string according to a given divider */
 void new_strtok(char string[], char divider, char result[]){
@@ -235,7 +301,7 @@ void calculate_chunk_num(char *trace_name){
 	char usetime[10];
     char divider=',';
 
-	int i,j;
+	int i;
 	int access_start_block, access_end_block;
 	int num_distict_chunks_per_timestamp;
 	int count;
@@ -280,8 +346,22 @@ void calculate_chunk_num(char *trace_name){
         new_strtok(operation,divider,size);
 		new_strtok(operation,divider,usetime);
 
-		if(strcmp(op_type, "Read")==0)
+		if(strcmp(op_type, "Read")==0){
+
+            // transform the offset and size
+			trnsfm_char_to_int(offset, offset_int);
+			trnsfm_char_to_int(size, size_int);
+
+			// update the max_access_chunks_per_timestamp to avoid segmentation fault in next degraded read test 
+			access_start_block=(*offset_int)/block_size;
+			access_end_block=(*offset_int+*size_int-1)/block_size; 
+
+			if(access_end_block - access_start_block +1 > max_access_chunks_per_timestamp)
+				max_access_chunks_per_timestamp=access_end_block-access_start_block+1;
+
 			continue;
+			
+			}
 
         // process timestamp, offset, and operated size
 		process_timestamp(orig_timestamp, round_timestamp);
@@ -295,7 +375,7 @@ void calculate_chunk_num(char *trace_name){
 		//if it is the begining of the first pattern of a timestamp, then collect the info of the last timestamp
 		if(strcmp(pre_timestamp, round_timestamp)!=0){
 
-			//printf("\n%s\n",pre_timestamp);
+			//if it is a new timestamp, then copy it to the pre_timestamp
 			strcpy(pre_timestamp, round_timestamp);
 
 			//if it is not the first timestamp, then initialize parameters
@@ -358,6 +438,8 @@ void calculate_chunk_num(char *trace_name){
 	// for the access pattern in the last timestamp
 	if(temp_count>max_access_chunks_per_timestamp)
 		max_access_chunks_per_timestamp=temp_count;
+
+	printf("max_access_chunks_per_timestamp=%d\n", max_access_chunks_per_timestamp);
 
 	num_distinct_chunks_timestamp[num_timestamp]=num_distict_chunks_per_timestamp;
 	num_timestamp++;
@@ -958,11 +1040,9 @@ void lrc_local_group_orgnzt(int* stripe_chnk_crrltn_dgr, int* stripe_chnk_idx_in
 	int slct_chnk_idx;
 	int chose_chnk_idx;
 	int stripe_chunk_idx;
-	int crrltd_chunk_idx;
 
 	fir_idx=-1;
 	sec_idx=-1;
-
 	num_chunk_per_lg=erasure_k/num_lg;
 
 	int* if_select=(int*)malloc(sizeof(int)*erasure_k);
@@ -1118,10 +1198,8 @@ void stripe_orgnzt(int* caso_crltd_mtrx, int* caso_crltd_dgr_mtrix, int num_corr
 	int candidate_chunk;
 	int temp_index;
 	int select_chunk;
-	int num_chunk_per_lg;
 	int if_exist_clltn;
 
-	num_chunk_per_lg=erasure_k/num_lg;
 	stripe_count=0;
 	ognz_crrltd_cnt=0;
 
@@ -1622,51 +1700,6 @@ void quick_sort_value(int *data, int left, int right){
 }
 
 
-
-// it sorts the unrelevant chunks according to their access frequencies
-// the function is to sort the array and move the corresponding index to the new position;
-void QuickSort_index(int *data, int index[],int left, int right){
-	int temp = data[left];
-	int p = left;
-	int temp_value=index[left];
-	int i = left, j = right;
-
-	while (i <= j)
-	{
-		while (data[j] <= temp && j >= p)
-			j--;
-		if(j >= p)
-		{
-			data[p] = data[j];
-			index[p]=index[j];
-			p = j;
-		}
-
-		while (data[i] >= temp && i <= p)
-			i++;
-		if (i <= p)
-		{
-			data[p] = data[i];
-			index[p]=index[i];
-			p = i;
-		}
-	}
-
-	data[p] = temp;
-	index[p]=temp_value;
-
-	////printf{""}
-	//for(i=left;i<=right;i++) //printf("%d ",index[i]);
-	////printf("\n");
-
-	if(p - left > 1)
-		QuickSort_index(data, index, left, p-1);
-	if(right - p > 1)
-		QuickSort_index(data, index, p+1, right);
-	
-}
-
-
 // calculate the ones in the matrix
 int calculate_chunk_num_io_matrix(int *io_matrix, int len, int width){
 
@@ -1814,7 +1847,6 @@ close(fd_disk[i]);
 
 void get_chnk_info(int chunk_id, CHUNK_INFO* chunk_info){
 
-   int max_crrltd_chnk_bf_chnk_id;
    int crrltd_chnk_idx;
    int temp_index;
    int num_chunk_per_lg;
@@ -1933,7 +1965,6 @@ int psw_time_caso(char *trace_name, char given_timestamp[], double *time){
 	int stripe_count;
 	int write_count;
 	int rotation;
-	int sort_index, real_index;
 	int lg_id, lg_count=0;
 	int *total_caso_io;
 	int c=0;
@@ -2022,9 +2053,8 @@ int psw_time_caso(char *trace_name, char given_timestamp[], double *time){
 		for(i=access_start_block; i<=access_end_block; i++){
 
 			memset(chunk_info, 0, sizeof(CHUNK_INFO));
-
 			get_chnk_info(i, chunk_info); 
-
+			
 			rotation=chunk_info->stripe_id%num_disk_stripe;	
 
 			for(j=0; j<stripe_count; j++){
@@ -2537,14 +2567,13 @@ int psw_time_continugous(char *trace_name, char given_timestamp[], double *time)
 // is available is marked as 1). What we do is to perform degraded reads
 // @stripe_id_array: it records the stripe id that is involved in the requests
 // @stripe_count: the number of stripes that are involved.
-int degraded_reads(int *io_request, int *stripe_id_array, int stripe_count, int *num_extra_io, int if_continugous, int num_disk_stripe){
+int degraded_reads(int *io_request, int *stripe_id_array, int stripe_count, int if_continugous, int num_disk_stripe){
 
 	int i, j; 
 	int k;
 	int temp_stripe, temp_rotation;
 	int num_cur_req_chunks;
 	int num_extra_req_chunks, cur_extra_chunk;
-	int io_count;
 	int flag;
 	int lg_id;
 	int orig_failed_chunk_id;
@@ -2559,12 +2588,9 @@ int degraded_reads(int *io_request, int *stripe_id_array, int stripe_count, int 
 		num_cur_req_chunks=0;
 
 		// calculate the number of elements to be read currently
-		for(j=0; j< num_disk_stripe; j++){
-
+		for(j=0; j<num_disk_stripe; j++)
 			if(io_request[i*num_disk_stripe+j]==1)
 				num_cur_req_chunks++;
-
-		}
 
 		// scan the io_request
 		for(j=0; j<num_disk_stripe; j++){
@@ -2572,9 +2598,7 @@ int degraded_reads(int *io_request, int *stripe_id_array, int stripe_count, int 
 			// if a requested chunk is lost
 			if(io_request[i*num_disk_stripe+j]==-1){
 
-				io_count=0;
 				flag=1;
-
 				temp_stripe=stripe_id_array[i];
 
 				if(if_continugous==0)
@@ -2592,20 +2616,18 @@ int degraded_reads(int *io_request, int *stripe_id_array, int stripe_count, int 
 					    continue;
 
 				    // we read all the k-1 data chunks
-				    for(k=0; k< erasure_k; k++){
-
+				    for(k=0; k<erasure_k; k++){
+						
 					    cur_extra_chunk=(k+temp_rotation)%num_disk_stripe;
-					    if(io_request[i*num_disk_stripe+cur_extra_chunk]==0){
-
+					
+					    if(io_request[i*num_disk_stripe+cur_extra_chunk]==0)
 						    io_request[i*num_disk_stripe+cur_extra_chunk]=2;
-						    io_count++;
-
-					    }
+					    
 				    }
 
-                    // read a global parity 
-					io_request[i*num_disk_stripe+(erasure_k+temp_rotation)%num_disk_stripe]=3;
-					
+				  // read a global parity 
+				  io_request[i*num_disk_stripe+(erasure_k+temp_rotation)%num_disk_stripe]=3;
+				
 				  }
 				
 				// if it is lrc, then we use local parity to repair the lost data chunk
@@ -2619,21 +2641,16 @@ int degraded_reads(int *io_request, int *stripe_id_array, int stripe_count, int 
 					for(k=lg_id*num_chnk_per_lg; k<(lg_id+1)*num_chnk_per_lg; k++){
 
 						cur_extra_chunk=(k+temp_rotation)%num_disk_stripe;
-						if(io_request[i*num_disk_stripe+cur_extra_chunk]==0){
-
+						
+						if(io_request[i*num_disk_stripe+cur_extra_chunk]==0)
 							io_request[i*num_disk_stripe+cur_extra_chunk]=2;
-							io_count++;
 
-							}
 						}
 
 					// read one local parity chunk in that local group
 					io_request[i*num_disk_stripe+(erasure_k+lg_id*lg_prty_num+temp_rotation)%num_disk_stripe]=3;
 					
 				}
-
-			*num_extra_io+=io_count;
-
 			}
 		}
 	}
@@ -2734,8 +2751,7 @@ close(fd_disk[i]);
 */
 
 
-/*
-void dr_time_caso(char *trace_name, char given_timestamp[], int *chunk_to_stripe_map, int *chunk_to_stripe_chunk_map, int *num_extra_io, double *time){
+void dr_time_caso(char *trace_name, char given_timestamp[], int *num_extra_io, double *time){
 
 	//read the data from csv file
 	FILE *fp;
@@ -2760,7 +2776,7 @@ void dr_time_caso(char *trace_name, char given_timestamp[], int *chunk_to_stripe
 	int access_start_block, access_end_block;
 	int count;
 	int io_count;
-	int temp_stripe_id, temp_chunk_id;
+	int extra_io_count;
 	int num_disk_stripe;
 
 	long long *size_int;
@@ -2772,6 +2788,7 @@ void dr_time_caso(char *trace_name, char given_timestamp[], int *chunk_to_stripe
 	size_int=&b;
 	count=0;
 	io_count=0;
+	extra_io_count=0;
 
 	// define the number of disks of a stripe for different codes
 	if(strcmp(code_type, "rs")==0)
@@ -2792,20 +2809,18 @@ void dr_time_caso(char *trace_name, char given_timestamp[], int *chunk_to_stripe
 	int *io_request=(int*)malloc(sizeof(int)*max_accessed_stripes*num_disk_stripe); // it records the io request in a timestamp
 
 	int stripe_count;
-	int read_count, write_count;
 	int rotation;
 	int if_dr;
-	int sort_index, real_index;
 	int *total_caso_io;
 	int flag;
 	int c=0;
 
 	total_caso_io=&c;
 	stripe_count=0;
-	read_count=0;
-	write_count=0;
-
+	
 	struct timeval begin_time, end_time;
+
+	CHUNK_INFO* chunk_info=(CHUNK_INFO*)malloc(sizeof(CHUNK_INFO));
 
 	for(failed_disk=0; failed_disk<num_disk_stripe; failed_disk++){
 
@@ -2836,12 +2851,8 @@ void dr_time_caso(char *trace_name, char given_timestamp[], int *chunk_to_stripe
 			flag=1;
 
 			// get the operation 
-			if(strcmp(op_type, "Read")!=0){ 
-				write_count++;
+			if(strcmp(op_type, "Read")!=0)
 				continue;
-			}
-
-			read_count++;
 			
 			trnsfm_char_to_int(offset, offset_int);
 			trnsfm_char_to_int(size, size_int);
@@ -2850,6 +2861,7 @@ void dr_time_caso(char *trace_name, char given_timestamp[], int *chunk_to_stripe
 
 			// we issue each read request immediately and initialize the io_request array
 			memset(io_request, 0, sizeof(int)*max_accessed_stripes*num_disk_stripe);
+			memset(stripes_per_timestamp, 0, sizeof(int)*max_accessed_stripes);
 
 			// update io_request
 			stripe_count=0;
@@ -2857,66 +2869,68 @@ void dr_time_caso(char *trace_name, char given_timestamp[], int *chunk_to_stripe
 			for(i=access_start_block; i<=access_end_block; i++){
 
                 // get the stripe id of the read data 
-
-
+				memset(chunk_info, 0, sizeof(CHUNK_INFO));
+				get_chnk_info(i, chunk_info); 
 				
-				sort_index=binary_search(sort_trace_pattern, cur_rcd_idx, i);
-				real_index=sort_pattern_index[sort_index];
-				temp_stripe_id=chunk_to_stripe_map[real_index];
+				rotation=chunk_info->stripe_id%num_disk_stripe; 
 
-
-
-
-
-				
-				rotation=temp_stripe_id%num_disk_stripe;
-				temp_chunk_id=chunk_to_stripe_chunk_map[real_index];
-
-				for(j=0; j<stripe_count; j++){
-
-					if(stripes_per_timestamp[j]==temp_stripe_id)
+				for(j=0; j<stripe_count; j++)
+					if(stripes_per_timestamp[j]==chunk_info->stripe_id)
 						break;
 
-				}
-
 				if(j>=stripe_count){
-					stripes_per_timestamp[stripe_count]=temp_stripe_id;
+					stripes_per_timestamp[stripe_count]=chunk_info->stripe_id;
 					stripe_count++;
-				}
+					}
 
 				// if the data is on the failed disk 
-				if((temp_chunk_id+rotation)%num_disk_stripe==failed_disk)
-					io_request[j*num_disk_stripe+(temp_chunk_id+rotation)%num_disk_stripe]=-1;
+				int temp_chunk_id=(chunk_info->chunk_id_in_stripe+rotation)%num_disk_stripe;
+
+				if(temp_chunk_id==failed_disk)
+					io_request[j*num_disk_stripe+temp_chunk_id]=-1;
 
 				else 
-					io_request[j*num_disk_stripe+(temp_chunk_id+rotation)%num_disk_stripe]=1;
+					io_request[j*num_disk_stripe+temp_chunk_id]=1;
 
 			}
 
 			// check if the read is degraded read 
-			if_dr=degraded_reads(io_request, stripes_per_timestamp, stripe_count, num_extra_io, 0, num_disk_stripe);
+			if_dr=degraded_reads(io_request, stripes_per_timestamp, stripe_count, 0, num_disk_stripe);	
+			
 			io_count+=calculate_num_io(io_request, stripe_count, num_disk_stripe);
+			extra_io_count=calculate_extra_io(io_request, stripe_count, num_disk_stripe);
+			
+			*num_extra_io+=extra_io_count;
 
 			if(if_dr==1){
+				
+				gettimeofday(&begin_time, NULL);
 
 				//system_parallel_reads(io_request, stripes_per_timestamp, stripe_count, total_caso_io);
+
+				gettimeofday(&end_time, NULL);
+
 				*time+=(end_time.tv_sec-begin_time.tv_sec+(end_time.tv_usec-begin_time.tv_usec)*1.0/1000000)/50;
 
 				}
 		}
 	}
 
+	printf("*num_extra_io=%d, io_count=%d\n", *num_extra_io, io_count);
+
 	printf("caso_dr_io_per_disk_failure=%.2lf\n", io_count*1.0/num_disk_stripe);
 	
 	fclose(fp);	 
 	free(stripes_per_timestamp);
 	free(io_request);
+	free(chunk_info);
 	
 }
 
 
 void dr_time_striping(char *trace_name, char given_timestamp[], int *num_extra_io, double *time){
 
+    printf("--------dr_time_striping\n");
 	//read the data from csv file
 	FILE *fp;
 
@@ -2941,6 +2955,7 @@ void dr_time_striping(char *trace_name, char given_timestamp[], int *num_extra_i
 	int access_start_block, access_end_block;
 	int count;
 	int io_count;
+	int extra_io_count;
 	int temp_stripe_id, temp_chunk_id;
 	int if_dr;
 	int num_disk_stripe;
@@ -2954,6 +2969,7 @@ void dr_time_striping(char *trace_name, char given_timestamp[], int *num_extra_i
 	size_int=&b;
 	count=0;
 	io_count=0;
+	extra_io_count=0;
 
 	// define the number of disks of a stripe for different codes
 	if(strcmp(code_type, "rs")==0)
@@ -2978,11 +2994,9 @@ void dr_time_striping(char *trace_name, char given_timestamp[], int *num_extra_i
 	int *total_caso_io;
 	int c=0;
 	int flag;
-	int	read_count;
 	
 	total_caso_io=&c;
 	stripe_count=0;
-	read_count=0;
 
 	struct timeval begin_time, end_time;
 
@@ -3018,8 +3032,6 @@ void dr_time_striping(char *trace_name, char given_timestamp[], int *num_extra_i
 			if(strcmp(op_type, "Read")!=0) 
 				continue;
 
-			read_count++;
-
 			trnsfm_char_to_int(offset, offset_int);
 			trnsfm_char_to_int(size, size_int);
 			access_start_block=(*offset_int)/block_size;
@@ -3027,6 +3039,7 @@ void dr_time_striping(char *trace_name, char given_timestamp[], int *num_extra_i
 
 			// we issue each read request immediately and initialize the io_request array
 			memset(io_request, 0, sizeof(int)*max_accessed_stripes*num_disk_stripe);
+			memset(stripes_per_timestamp, 0, sizeof(int)*max_accessed_stripes);
 
 			// update io_requst
 			stripe_count=0;
@@ -3050,7 +3063,6 @@ void dr_time_striping(char *trace_name, char given_timestamp[], int *num_extra_i
 					stripe_count++;
 				}
 
-
 				// if the data is on the failed disk 
 				if((temp_chunk_id+rotation)%num_disk_stripe==failed_disk)
 					io_request[j*num_disk_stripe+(temp_chunk_id+rotation)%num_disk_stripe]=-1;
@@ -3061,8 +3073,11 @@ void dr_time_striping(char *trace_name, char given_timestamp[], int *num_extra_i
 			}
 			
 			// perform degraded reads
-			if_dr=degraded_reads(io_request, stripes_per_timestamp, stripe_count, num_extra_io, 0, num_disk_stripe);
+			if_dr=degraded_reads(io_request, stripes_per_timestamp, stripe_count, 0, num_disk_stripe);
+			
 			io_count+=calculate_num_io(io_request, stripe_count, num_disk_stripe);
+			extra_io_count=calculate_extra_io(io_request, stripe_count, num_disk_stripe);
+			*num_extra_io+=extra_io_count;
 			
 			// if it is a degraded read, then perform system write
 			if(if_dr==1){
@@ -3089,7 +3104,7 @@ void dr_time_striping(char *trace_name, char given_timestamp[], int *num_extra_i
 
 void dr_time_continugous(char *trace_name, char given_timestamp[], int *num_extra_io, double *time){
 
-	//read the data from csv file
+	printf("--------dr_time_continugous\n");
 	FILE *fp;
 
 	if((fp=fopen(trace_name,"r"))==NULL){
@@ -3113,6 +3128,7 @@ void dr_time_continugous(char *trace_name, char given_timestamp[], int *num_extr
 	int access_start_block, access_end_block;
 	int count;
 	int io_count;
+	int extra_io_count;
 	int temp_group_id, temp_stripe, temp_group_block_id;
 	int temp_row_id;
 	int group_num_blocks=contiguous_block*erasure_k;
@@ -3131,6 +3147,7 @@ void dr_time_continugous(char *trace_name, char given_timestamp[], int *num_extr
 	size_int=&b;
 	count=0;
 	io_count=0;
+	extra_io_count=0;
 
 	// define the number of disks of a stripe for different codes
 	if(strcmp(code_type, "rs")==0)
@@ -3191,13 +3208,11 @@ void dr_time_continugous(char *trace_name, char given_timestamp[], int *num_extr
 			// update flag
 			flag=1;
 
-
 			// get the operation 
 			if(strcmp(op_type, "Read")!=0) 
 				continue;
 
-			// process timestamp, offset, and operated size
-			process_timestamp(orig_timestamp, round_timestamp);
+			// offset and operated size
 			trnsfm_char_to_int(offset, offset_int);
 			trnsfm_char_to_int(size, size_int);
 			
@@ -3206,6 +3221,7 @@ void dr_time_continugous(char *trace_name, char given_timestamp[], int *num_extr
 
 			// we issue each read request immediately and initialize the io_request array
 			memset(io_request, 0, sizeof(int)*max_accessed_stripes*num_disk_stripe);
+			memset(stripes_per_timestamp, 0, sizeof(int)*max_accessed_stripes);
 
 			stripe_count=0;
 
@@ -3247,8 +3263,11 @@ void dr_time_continugous(char *trace_name, char given_timestamp[], int *num_extr
 			}
 
 			// perform degraded reads
-			if_dr=degraded_reads(io_request, stripes_per_timestamp, stripe_count, num_extra_io, 1, num_disk_stripe);
+			if_dr=degraded_reads(io_request, stripes_per_timestamp, stripe_count, 1, num_disk_stripe);
+			
 			io_count+=calculate_num_io(io_request, stripe_count, num_disk_stripe);
+			extra_io_count=calculate_extra_io(io_request, stripe_count, num_disk_stripe);
+			*num_extra_io+=extra_io_count;
 
 			// if it is a degraded read, then perform system write
 			if(if_dr==1){
@@ -3272,7 +3291,5 @@ void dr_time_continugous(char *trace_name, char given_timestamp[], int *num_extr
 	free(io_request);
 
 }
-
-*/
 
 

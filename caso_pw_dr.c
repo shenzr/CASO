@@ -27,8 +27,6 @@ int main(int argc, char *argv[]){
   int i;
   int count;
   int begin_timestamp_num;
-  int temp_chunk_size_kb=chunk_size_kb_unit;
-  int temp_erasure_k=erasure_k;
   int num_disk_stripe;
   double begin_stripe_ratio; 
 
@@ -101,7 +99,6 @@ int main(int argc, char *argv[]){
   int* sort_caso_rcd_freq=(int*)malloc(sizeof(int)*caso_rcd_idx);
   
   int orig_index;
-  int* correlated_stripe_set;
 
   for(i=0; i<caso_rcd_idx; i++)
   	sort_caso_rcd_pattern[i]=trace_access_pattern[i];
@@ -137,7 +134,7 @@ int main(int argc, char *argv[]){
   printf("+++++++++ partial stripe writes test +++++++++\n");
   psw_time_caso(argv[1],begin_timestamp, caso_time);
   psw_time_striping(argv[1], begin_timestamp, striping_time);
-  //psw_time_continugous(argv[1], begin_timestamp,continugous_time);
+  psw_time_continugous(argv[1], begin_timestamp,continugous_time);
 
   /* ========== Perform degraded reads ========= */
   int *caso_num_extra_io;
@@ -153,9 +150,9 @@ int main(int argc, char *argv[]){
   continugous_num_extra_io=&e;
 
   printf("+++++++++ degraded read test +++++++++\n");
-  //dr_time_caso(argv[1], begin_timestamp, caso_num_extra_io, caso_time); 
-  //dr_time_striping(argv[1], begin_timestamp, striping_num_extra_io, striping_time);
-  //dr_time_continugous(argv[1], begin_timestamp, continugous_num_extra_io, continugous_time);
+  dr_time_caso(argv[1], begin_timestamp, caso_num_extra_io, caso_time); 
+  dr_time_striping(argv[1], begin_timestamp, striping_num_extra_io, striping_time);
+  dr_time_continugous(argv[1], begin_timestamp, continugous_num_extra_io, continugous_time);
 
   printf("caso_dr_extra_io_per_disk_failure=%.2lf, striping_dr_extra_io_per_disk_failure=%.2lf, continugous_dr_extra_io_per_disk_failure=%.2lf\n", 
   		(*caso_num_extra_io)*1.0/num_disk_stripe, (*striping_num_extra_io)*1.0/num_disk_stripe, (*continugous_num_extra_io)*1.0/num_disk_stripe);
