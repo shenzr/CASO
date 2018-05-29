@@ -439,14 +439,10 @@ void calculate_chunk_num(char *trace_name){
 	if(temp_count>max_access_chunks_per_timestamp)
 		max_access_chunks_per_timestamp=temp_count;
 
-	printf("max_access_chunks_per_timestamp=%d\n", max_access_chunks_per_timestamp);
-
 	num_distinct_chunks_timestamp[num_timestamp]=num_distict_chunks_per_timestamp;
 	num_timestamp++;
 
 	fclose(fp);
-
-    printf("cur_rcd_idx=%d\n", cur_rcd_idx);
 
 }
 
@@ -454,7 +450,6 @@ void calculate_chunk_num(char *trace_name){
 
 void determine_begin_timestamp(char *trace_name, char begin_timestamp[], int begin_timestamp_num){
 
-	printf("------> determine_begin_timestamp\n");
 	//read the data from csv file
 	FILE *fp;
 
@@ -512,8 +507,6 @@ void determine_begin_timestamp(char *trace_name, char begin_timestamp[], int beg
 	}
 
 	fclose(fp);
-
-	printf("<------ determine_begin_timestamp\n");
 
 }
 
@@ -863,9 +856,6 @@ void extract_caso_crltd_chnk_dgr(int* caso_crltd_mtrx, int* caso_crltd_dgr_mtrix
 		}
 		
 	}
-
-	printf("crltd_chunk_cnt=%d\n", crltd_chunk_cnt);
-
 
 }
 
@@ -1567,7 +1557,7 @@ void caso_stripe_ognztn(char *trace_name,  int *analyze_chunks_time_slots, int *
 			}
 		}
 
-	printf("poten_crrltd_cnt=%d\n",poten_crrltd_cnt);
+	//printf("poten_crrltd_cnt=%d\n",poten_crrltd_cnt);
 
 	int* rcd_peer_chks=(int*)malloc(poten_crrltd_cnt*sizeof(int)*max_num_peer_chunks);  // record the peer chunks with each potential correlated chunk in caso analysis
 	int* freq_peer_chks=(int*)malloc(poten_crrltd_cnt*sizeof(int)*max_num_peer_chunks); // record the number of times that are accessed together 
@@ -1624,7 +1614,7 @@ void caso_stripe_ognztn(char *trace_name,  int *analyze_chunks_time_slots, int *
 		if(correlate_chunk_bucket[i]!=-1)
 			num_correlated_chunk++;
 
-	printf("----num_correlated_chunk=%d\n", num_correlated_chunk);
+	//printf("num_correlated_chunk=%d\n", num_correlated_chunk);
 
 	//construct caso_crltd_mtrx, caso_crltd_dgr_mtrx
 	int* caso_crltd_mtrx=(int*)malloc(sizeof(int)*num_correlated_chunk*max_num_relevent_chunks_per_chunk);
@@ -2916,9 +2906,7 @@ void dr_time_caso(char *trace_name, char given_timestamp[], int *num_extra_io, d
 		}
 	}
 
-	printf("*num_extra_io=%d, io_count=%d\n", *num_extra_io, io_count);
-
-	printf("caso_dr_io_per_disk_failure=%.2lf\n", io_count*1.0/num_disk_stripe);
+	//printf("caso_dr_io_per_disk_failure=%.2lf\n", io_count*1.0/num_disk_stripe);
 	
 	fclose(fp);	 
 	free(stripes_per_timestamp);
@@ -2930,7 +2918,6 @@ void dr_time_caso(char *trace_name, char given_timestamp[], int *num_extra_io, d
 
 void dr_time_striping(char *trace_name, char given_timestamp[], int *num_extra_io, double *time){
 
-    printf("--------dr_time_striping\n");
 	//read the data from csv file
 	FILE *fp;
 
@@ -3094,7 +3081,7 @@ void dr_time_striping(char *trace_name, char given_timestamp[], int *num_extra_i
 		}
 	}
 
-	printf("striping_dr_io_per_disk_failure=%.2lf\n", io_count*1.0/num_disk_stripe);
+	//printf("striping_dr_io_per_disk_failure=%.2lf\n", io_count*1.0/num_disk_stripe);
 
 	fclose(fp);
 	free(stripes_per_timestamp);
@@ -3104,7 +3091,6 @@ void dr_time_striping(char *trace_name, char given_timestamp[], int *num_extra_i
 
 void dr_time_continugous(char *trace_name, char given_timestamp[], int *num_extra_io, double *time){
 
-	printf("--------dr_time_continugous\n");
 	FILE *fp;
 
 	if((fp=fopen(trace_name,"r"))==NULL){
@@ -3284,7 +3270,7 @@ void dr_time_continugous(char *trace_name, char given_timestamp[], int *num_extr
 		}
 	}
 
-	printf("continugous_dr_io_per_disk_failure=%.2lf\n", io_count*1.0/num_disk_stripe);
+	//printf("continugous_dr_io_per_disk_failure=%.2lf\n", io_count*1.0/num_disk_stripe);
 
 	fclose(fp);
 	free(stripes_per_timestamp);

@@ -22,8 +22,6 @@ int main(int argc, char *argv[]){
 	exit(1);
   	}
 
-  printf("\n\n+++++++trace=%s========\n", argv[1]);
-
   int i;
   int count;
   int begin_timestamp_num;
@@ -37,6 +35,8 @@ int main(int argc, char *argv[]){
   num_timestamp=0;
   max_access_chunks_per_timestamp=-1;
   num_rele_chunks=0;
+
+  printf("+++++++ trace=%s, ratio=%.1lf, code_type=%s ========\n", argv[1], begin_stripe_ratio, code_type);
 
   /* ====== judge the input code_type ======*/
 
@@ -71,13 +71,13 @@ int main(int argc, char *argv[]){
   		}
   	}
 
-  printf("cur_rcd_idx=%d, access_freq_all_chunks=%d \n", cur_rcd_idx, total_access_chunk_num); 
-  printf("num_chunks_accessed_more_2_times=%d, freq_chunks_access_more_2_times=%d\n", count, count_larger_2);
+  //printf("cur_rcd_idx=%d, access_freq_all_chunks=%d \n", cur_rcd_idx, total_access_chunk_num); 
+  //printf("num_chunks_accessed_more_2_times=%d, freq_chunks_access_more_2_times=%d\n", count, count_larger_2);
 
   // calculate the partial stripe writes io 
   begin_timestamp_num=begin_stripe_ratio*num_timestamp;
 
-  printf("num_timestamp=%d, validate_timestamp=%d\n", num_timestamp, begin_timestamp_num);
+  //printf("num_timestamp=%d, validate_timestamp=%d\n", num_timestamp, begin_timestamp_num);
 
   // determine the begin_timestamp
   char begin_timestamp[100];
@@ -88,7 +88,7 @@ int main(int argc, char *argv[]){
   	if(freq_access_chunk[i]>=2)
 		count++;
 
-  printf("max_access_chunks_per_timestamp=%d\n", max_access_chunks_per_timestamp);
+  //printf("max_access_chunks_per_timestamp=%d\n", max_access_chunks_per_timestamp);
 
   //printf("max_access_chunks_per_timestamp=%d\n",max_access_chunks_per_timestamp);
   int* analyze_chunks_time_slots=(int*)malloc(sizeof(int)*begin_timestamp_num*max_access_chunks_per_timestamp);// record all the accessed blocks at every timestamp
