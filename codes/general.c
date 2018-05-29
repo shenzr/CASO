@@ -21,7 +21,7 @@
 
 #include "jerasure/jerasure.h"
 #include "jerasure/galois.h"
-#include "common.h"
+#include "config.h"
 
 #define inf 999999999
 #define talloc(type, num) (type *) malloc(sizeof(type)*(num))

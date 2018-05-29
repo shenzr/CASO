@@ -9,7 +9,7 @@
 #include <aio.h>
 #include <sys/time.h>
 
-#include "common.h"
+#include "config.h"
 #include "general.h"
 
 #define chunk_size_kb_unit block_size/1024
