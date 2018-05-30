@@ -334,8 +334,8 @@ void calculate_chunk_num(char *trace_name){
 		count++;
 		total_num_req++;
 
-		if(total_num_req%10000==0)
-			printf("total_num_req=%d, cur_rcd_idx=%d\n", total_num_req, cur_rcd_idx);
+		//if(total_num_req%10000==0)
+			//printf("total_num_req=%d, cur_rcd_idx=%d\n", total_num_req, cur_rcd_idx);
 
         // break the operation
         new_strtok(operation,divider,orig_timestamp);
@@ -1524,16 +1524,18 @@ void caso_stripe_ognztn(char *trace_name,  int *analyze_chunks_time_slots, int *
 			if(sort_caso_rcd_freq[sort_index]<2)
 				continue;
 
-            // record the potential correlated data chunk
-			analyze_chunks_time_slots[count_timestamp*max_access_chunks_per_timestamp+cur_index]=k;
-			cur_index++;
-
+            // pre-validate the range of cur_index which should not be larger than max_access_chunks_per_timestamp
 			if(cur_index>=max_access_chunks_per_timestamp){
 
-				printf("analyze_chunks_time_slots record error!\n");
+				printf("analyze_chunks_time_slots record error! cur_index=%d, max_access_chunks_per_timestamp=%d\n", cur_index, max_access_chunks_per_timestamp);
 				exit(1);
 
 			}
+
+            // record the potential correlated data chunk
+			analyze_chunks_time_slots[count_timestamp*max_access_chunks_per_timestamp+cur_index]=k;
+			cur_index++;
+			
 		}
 	}
 
