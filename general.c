@@ -1146,7 +1146,7 @@ void lrc_local_group_orgnzt(int* stripe_chnk_crrltn_dgr, int* stripe_chnk_idx_in
 // it returns a pointer of the organized_correlated_data_set, whose size is ognz_crrltd_cnt*1, and is sorted in ascending order
 void stripe_orgnzt(int* caso_crltd_mtrx, int* caso_crltd_dgr_mtrix, int num_correlated_chunk, int* crrltd_chnk_pttn_idx){
 
-	printf("===========> stripe_organization:\n");
+	//printf("===========> stripe_organization:\n");
 
 	int i,j;
 	int first_chunk_index, second_chunk_index;
@@ -1196,7 +1196,7 @@ void stripe_orgnzt(int* caso_crltd_mtrx, int* caso_crltd_dgr_mtrix, int num_corr
     // the maximum number of correlated stripes 
 	max_crrltd_stripe=num_correlated_chunk/erasure_k;
 
-	printf("max_crrltd_stripe=%d\n", max_crrltd_stripe);
+	//printf("max_crrltd_stripe=%d\n", max_crrltd_stripe);
 
 	sort_ognzd_crrltd_chnk=(int*)malloc(sizeof(int)*erasure_k*max_crrltd_stripe);
 	ognzd_crrltd_chnk_lg=(int*)malloc(sizeof(int)*erasure_k*max_crrltd_stripe);
@@ -1359,8 +1359,8 @@ void stripe_orgnzt(int* caso_crltd_mtrx, int* caso_crltd_dgr_mtrix, int num_corr
 
 	}
 
-	printf("correlated stripes are completely organized!\n");
-	printf("ognz_crrltd_cnt=%d\n",ognz_crrltd_cnt);
+	//printf("correlated stripes are completely organized!\n");
+	//printf("ognz_crrltd_cnt=%d\n",ognz_crrltd_cnt);
 
 #if debug
 	printf("before_sort: ognzd_crrltd_chnk\n");
@@ -1397,7 +1397,7 @@ void stripe_orgnzt(int* caso_crltd_mtrx, int* caso_crltd_dgr_mtrix, int num_corr
 	free(stripe_chnk_crrltn_dgr);
 	free(stripe_chnk_idx_in_crrltn_set);
 
-	printf("<=========== stripe_organization:\n");
+	//printf("<=========== stripe_organization:\n");
 
 }
 
@@ -2102,8 +2102,8 @@ int psw_time_caso(char *trace_name, char given_timestamp[], double *time){
 	io_count+=stripe_count*erasure_m; 
 	io_count+=lg_count*lg_prty_num;
 
-	printf("write_count=%d\n", write_count);
-	printf("caso_parity_io=%d, total_io_num=%d\n", io_count, *total_caso_io);
+	//printf("write_count=%d\n", write_count);
+	printf("%d ", io_count);
 
 	fclose(fp);
 	free(stripes_per_timestamp);
@@ -2322,7 +2322,7 @@ int psw_time_striping(char *trace_name, char given_timestamp[], double *time){
 	io_count+=lg_count*lg_prty_num;
 	
 	//printf("num_of_write_op=%d, total_write_block_num=%d\n", write_count, *total_write_block_num);
-	printf("psw_striping_io_count=%d\n", io_count);
+	printf("%d\n", io_count);
 
 	fclose(fp);
 	free(stripes_per_timestamp);
@@ -2542,7 +2542,7 @@ int psw_time_continugous(char *trace_name, char given_timestamp[], double *time)
 	*time+=end_time.tv_sec-begin_time.tv_sec+(end_time.tv_usec-begin_time.tv_usec)*1.0/1000000;	 
 	io_count+=stripe_count*erasure_m;
 
-	printf("psw_time_continugous_io_count=%d\n", io_count);
+	//printf("psw_time_continugous_io_count=%d\n", io_count);
 
 
 	fclose(fp);

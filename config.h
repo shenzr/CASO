@@ -1,18 +1,18 @@
 #ifndef _COMMON_H
 #define _COMMON_H
 
-#define erasure_k 4
-#define erasure_m 2
+#define erasure_k 6
+#define erasure_m 3
 
 #define num_lg 2 // the number of local groups in a stripe, it should be divisible by erasure_m and erasure_k
-#define lg_prty_num erasure_m/num_lg  // the number of local parity in a local group 
+#define lg_prty_num 1  // the number of local parity in a local group 
 
-#define tm_dstnc_odr 3 // it defines the order of time distance (in units of nanoseconds) for correlation analysis
+#define tm_dstnc_odr 4 // it defines the order of time distance (in units of nanoseconds) for correlation analysis
 
 #define inf 999999999
 #define max_aces_blk_num 500000 // the strict accessed blocks in a trace (a block may appear more than twice)
-#define max_num_peer_chunks 20000  // we call the chunks that are accessed within a timestamp peer chunks
-#define max_num_relevent_chunks_per_chunk 3000 // it defines the maximum number of relevant chunks to a chunk
+#define max_num_peer_chunks 50000  // we call the chunks that are accessed within a timestamp peer chunks
+#define max_num_relevent_chunks_per_chunk 20000 // it defines the maximum number of relevant chunks to a chunk
 #define num_assume_timestamp 1000000
 #define bucket_depth 1000
 #define IF_LRC 0

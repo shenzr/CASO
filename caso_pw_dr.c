@@ -36,7 +36,9 @@ int main(int argc, char *argv[]){
   max_access_chunks_per_timestamp=-1;
   num_rele_chunks=0;
 
-  printf("+++++++ trace=%s, ratio=%.1lf, code_type=%s ========\n", argv[1], begin_stripe_ratio, code_type);
+  printf("lg_prty_num=%d\n", lg_prty_num);
+
+  //printf("\n+++++++ trace=%s, ratio=%.1lf, code_type=%s ========\n", argv[1], begin_stripe_ratio, code_type);
 
   /* ====== judge the input code_type ======*/
 
@@ -121,7 +123,7 @@ int main(int argc, char *argv[]){
 
   gettimeofday(&ed_tm, NULL);
 
-  printf("caso_analyze_time=%.2lf\n", ed_tm.tv_sec-bg_tm.tv_sec+(ed_tm.tv_usec-bg_tm.tv_usec)*1.0/1000000);
+  //printf("caso_analyze_time=%.2lf\n", ed_tm.tv_sec-bg_tm.tv_sec+(ed_tm.tv_usec-bg_tm.tv_usec)*1.0/1000000);
 
   double *caso_time, *striping_time, *continugous_time;
   double f=0, g=0, h=0;
@@ -131,7 +133,7 @@ int main(int argc, char *argv[]){
   continugous_time=&h; 
 
   /* ========== Perform partial stripe writes ========= */
-  printf("+++++++++ partial stripe writes test +++++++++\n");
+  //printf("+++++++++ partial stripe writes test +++++++++\n");
   psw_time_caso(argv[1],begin_timestamp, caso_time);
   psw_time_striping(argv[1], begin_timestamp, striping_time);
   psw_time_continugous(argv[1], begin_timestamp,continugous_time);
