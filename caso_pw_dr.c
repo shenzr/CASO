@@ -36,7 +36,7 @@ int main(int argc, char *argv[]){
   max_access_chunks_per_timestamp=-1;
   num_rele_chunks=0;
 
-  printf("lg_prty_num=%d\n", lg_prty_num);
+  // printf("lg_prty_num=%d\n", lg_prty_num);
 
   //printf("\n+++++++ trace=%s, ratio=%.1lf, code_type=%s ========\n", argv[1], begin_stripe_ratio, code_type);
 
