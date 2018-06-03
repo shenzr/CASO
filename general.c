@@ -592,11 +592,12 @@ void insert_chunk_into_bucket(int* bucket, int bucket_num, int chunk_id){
 
 		}
 	}
-
+#if debug
 	if(i>=bucket_depth){
 		printf("bucket-%d is full!\n", bucket_id);
 		exit(1);
 	}
+#endif
 
 }
 
@@ -616,7 +617,7 @@ void replace_old_peer_chunk(int* freq_peer_chks, int* rcd_peer_chks, int* caso_p
 
 	start_posi=start_search_posi[given_chunk_idx];
 
-	printf("replace the old and non-correlated chunk\n");
+	//printf("replace the old and non-correlated chunk\n");
 
 	//we replace the chunk according to the access time 
 	//we assume that an old access chunk that are not correlated will not be a correlated chunk any more
@@ -1160,12 +1161,13 @@ void stripe_orgnzt(int* caso_crltd_mtrx, int* caso_crltd_dgr_mtrix, int num_corr
 	for(i=0; i<num_correlated_chunk; i++)
 		crrltd_chnk_set[i]=caso_crltd_mtrx[i*max_num_relevent_chunks_per_chunk];
 
+#if debug
 	printf("caso_crltd_mtrx:\n");
 	print_matrix(caso_crltd_mtrx, max_num_relevent_chunks_per_chunk, num_correlated_chunk);
 
 	printf("caso_crltd_dgr_mtrix:\n");
 	print_matrix(caso_crltd_dgr_mtrix, max_num_relevent_chunks_per_chunk, num_correlated_chunk);
-
+#endif
 	// initiate the unrelevant chunks and their indices
 	int stripe_count;
 	int temp_count;
@@ -1307,7 +1309,7 @@ void stripe_orgnzt(int* caso_crltd_mtrx, int* caso_crltd_dgr_mtrix, int num_corr
 			// if there still exists relevant chunks, then organize the chunks that owns largest priority
 			if(flag==1){
 
-				printf("temp_count=%d, temp_max=%d\n", temp_count, temp_max);
+				//printf("temp_count=%d, temp_max=%d\n", temp_count, temp_max);
 
 				//record the index 
 				stripe_chnk_idx_in_crrltn_set[temp_count]=select_chunk_index;
@@ -1335,13 +1337,14 @@ void stripe_orgnzt(int* caso_crltd_mtrx, int* caso_crltd_dgr_mtrix, int num_corr
 			
 		}
 
+#if debug
 		// print the stripe set and the correlationd degrees
 		printf("%d-th stripe:\n", stripe_count);
 		print_matrix(temp_stripe, erasure_k, 1);
 
 		printf("correlation degree:\n");
 		print_matrix(stripe_chnk_crrltn_dgr, (erasure_k+1), erasure_k);		
-		
+#endif
 		//if it is LRC, then we have to organize the chunks of a stripe into local groups
 		if(strcmp(code_type, "lrc")==0) 
 			lrc_local_group_orgnzt(stripe_chnk_crrltn_dgr, stripe_chnk_idx_in_crrltn_set, crrltd_chnk_pttn_idx, stripe_count);
@@ -1350,10 +1353,10 @@ void stripe_orgnzt(int* caso_crltd_mtrx, int* caso_crltd_dgr_mtrix, int num_corr
 
 	//printf("correlated stripes are completely organized!\n");
 	//printf("ognz_crrltd_cnt=%d\n",ognz_crrltd_cnt);
-
+#if debug
 	printf("before_sort: ognzd_crrltd_chnk\n");
 	print_matrix(sort_ognzd_crrltd_chnk, ognz_crrltd_cnt, 1);
-
+#endif
 	// init the index 
 	sort_ognzd_crrltd_chnk_index=(int*)malloc(sizeof(int)*ognz_crrltd_cnt);
 
@@ -1363,6 +1366,7 @@ void stripe_orgnzt(int* caso_crltd_mtrx, int* caso_crltd_dgr_mtrix, int num_corr
     // sort the ognzd_crrltd_chnk 
 	QuickSort_index(sort_ognzd_crrltd_chnk, sort_ognzd_crrltd_chnk_index, 0, ognz_crrltd_cnt-1);
 
+#if debug
 	printf("after_sort: sort_ognzd_crrltd_chnk\n");
 	print_matrix(sort_ognzd_crrltd_chnk, ognz_crrltd_cnt, 1);
 
@@ -1373,6 +1377,7 @@ void stripe_orgnzt(int* caso_crltd_mtrx, int* caso_crltd_dgr_mtrix, int num_corr
 	for(i=0; i<ognz_crrltd_cnt; i++)
 		printf("%d ",ognzd_crrltd_chnk_lg[i]);
 	printf("\n");
+#endif
 
 	free(if_select_correlated_chunks);
 	free(temp_stripe);
