@@ -1,12 +1,12 @@
 echo -e "\nrs\n"
-#./caso_pw_dr ../msr-traces/wdev_2.csv 50 rs
-#./caso_pw_dr ../msr-traces/wdev_1.csv 50 rs
-#./caso_pw_dr ../msr-traces/wdev_3.csv 50 rs
-#./caso_pw_dr ../msr-traces/rsrch_1.csv 50 rs
-#./caso_pw_dr ../msr-traces/hm_1.csv 50 rs
-#./caso_pw_dr ../msr-traces/proj_4.csv 50 rs
-#./caso_pw_dr ../msr-traces/web_2.csv 50 rs
-#./caso_pw_dr ../msr-traces/src2_1.csv 50 rs
+./caso_pw_dr ../msr-traces/wdev_2.csv 50 rs
+./caso_pw_dr ../msr-traces/wdev_1.csv 50 rs
+./caso_pw_dr ../msr-traces/wdev_3.csv 50 rs
+./caso_pw_dr ../msr-traces/rsrch_1.csv 50 rs
+./caso_pw_dr ../msr-traces/hm_1.csv 50 rs
+./caso_pw_dr ../msr-traces/proj_4.csv 50 rs
+./caso_pw_dr ../msr-traces/web_2.csv 50 rs
+./caso_pw_dr ../msr-traces/src2_1.csv 50 rs
 echo -e "\nlrc\n"
 ./caso_pw_dr ../msr-traces/wdev_2.csv 50  lrc
 ./caso_pw_dr ../msr-traces/wdev_1.csv 50  lrc

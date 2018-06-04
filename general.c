@@ -2897,7 +2897,7 @@ void dr_time_caso(char *trace_name, char given_timestamp[], int *num_extra_io, d
 		}
 	}
 
-	//printf("caso_dr_io_per_disk_failure=%.2lf\n", io_count*1.0/num_disk_stripe);
+	printf("%.2lf ", io_count*1.0/num_disk_stripe);
 	
 	fclose(fp);	 
 	free(stripes_per_timestamp);
@@ -3072,7 +3072,7 @@ void dr_time_striping(char *trace_name, char given_timestamp[], int *num_extra_i
 		}
 	}
 
-	//printf("striping_dr_io_per_disk_failure=%.2lf\n", io_count*1.0/num_disk_stripe);
+	printf("%.2lf\n", io_count*1.0/num_disk_stripe);
 
 	fclose(fp);
 	free(stripes_per_timestamp);
