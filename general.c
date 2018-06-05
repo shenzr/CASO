@@ -617,13 +617,15 @@ void replace_old_peer_chunk(int* freq_peer_chks, int* rcd_peer_chks, int* caso_p
 
 	start_posi=start_search_posi[given_chunk_idx];
 
-	//printf("replace the old and non-correlated chunk\n");
+	//printf("------->replace_old_peer_chunk\n");
+	//printf("given_chunk=%d, peer_chunk=%d\n", given_chunk, peer_chunk);
+	//printf("given_chunk_idx=%d, start_posi=%d\n", given_chunk_idx, start_posi);
 
 	//we replace the chunk according to the access time 
 	//we assume that an old access chunk that are not correlated will not be a correlated chunk any more
 	for(k=start_posi; k<max_num_peer_chunks; k++){
 
-		if(freq_peer_chks[given_chunk_idx*max_num_peer_chunks+k]<2){
+		if(freq_peer_chks[given_chunk_idx*max_num_peer_chunks+k]<3){
 
 			rplcd_chk_id=rcd_peer_chks[given_chunk_idx*max_num_peer_chunks+k];
 			rcd_peer_chks[given_chunk_idx*max_num_peer_chunks+k]=peer_chunk;
@@ -638,16 +640,19 @@ void replace_old_peer_chunk(int* freq_peer_chks, int* rcd_peer_chks, int* caso_p
 
 	if(k>=max_num_peer_chunks){
 
-		printf("ERR: cannot find a replaced chunk!\n");
-		exit(1);
-
+		//printf("ERR: cannot find a replaced chunk!\n");
+		return; 
+		//exit(1);
+		
 	}
 
 	//remove the access record at the row of rplcd_chk_id
 	sort_rplcd_chk_idx=binary_search(caso_poten_crrltd_chks, poten_crrltd_cnt, rplcd_chk_id);
 
-	for(k=1; k<max_num_peer_chunks; k++){
+	//printf("rplcd_chk_id=%d, sort_rplcd_chk_idx=%d\n", rplcd_chk_id, sort_rplcd_chk_idx);
 
+	for(k=1; k<max_num_peer_chunks; k++){
+		
 		if(rcd_peer_chks[sort_rplcd_chk_idx*max_num_peer_chunks+k]==given_chunk){
 
 			rcd_peer_chks[sort_rplcd_chk_idx*max_num_peer_chunks+k]=-1;
@@ -670,11 +675,15 @@ void replace_old_peer_chunk(int* freq_peer_chks, int* rcd_peer_chks, int* caso_p
 
 	}
 
+	//printf("<-------replace_old_peer_chunk\n");
+
 }
 
 
 void record_access_freq(int bgn_tmstmp_num, int* analyze_chunks_time_slots, int* caso_poten_crrltd_chks, 
 		int* num_chunk_per_timestamp, int* rcd_peer_chks, int* freq_peer_chks, int* num_peer_chks){
+
+	//printf("-----> record_access_freq\n");
 
 	int i,j; 
 	int chk_idx1, chk_idx2;
@@ -683,7 +692,7 @@ void record_access_freq(int bgn_tmstmp_num, int* analyze_chunks_time_slots, int*
 
 	int* start_search_posi=(int*)malloc(sizeof(int)*poten_crrltd_cnt); //it records the position to start search for replacement, in order to save search time
 
-	memset(start_search_posi, 0, sizeof(int)*poten_crrltd_cnt);
+	memset(start_search_posi, 1, sizeof(int)*poten_crrltd_cnt);
 	memset(rcd_peer_chks, -1, sizeof(int)*poten_crrltd_cnt*max_num_peer_chunks);
 	memset(freq_peer_chks, 0, sizeof(int)*poten_crrltd_cnt*max_num_peer_chunks);
 	memset(num_peer_chks, 0, sizeof(int)*poten_crrltd_cnt);
@@ -703,6 +712,9 @@ void record_access_freq(int bgn_tmstmp_num, int* analyze_chunks_time_slots, int*
 
 				chunk_id1=analyze_chunks_time_slots[i*max_access_chunks_per_timestamp+chk_idx1];
 				chunk_id2=analyze_chunks_time_slots[i*max_access_chunks_per_timestamp+chk_idx2];
+
+				if(chunk_id1==chunk_id2)
+					continue;
 
 				sort_chk_idx1=binary_search(caso_poten_crrltd_chks, poten_crrltd_cnt, chunk_id1);
 				sort_chk_idx2=binary_search(caso_poten_crrltd_chks, poten_crrltd_cnt, chunk_id2);
@@ -730,6 +742,7 @@ void record_access_freq(int bgn_tmstmp_num, int* analyze_chunks_time_slots, int*
 
 						rcd_peer_chks[sort_chk_idx1*max_num_peer_chunks+j]=chunk_id2;
 						freq_peer_chks[sort_chk_idx1*max_num_peer_chunks+j]++;
+						
 						//increase the peer_chunk count
 						num_peer_chks[sort_chk_idx1]++;
 
@@ -779,7 +792,11 @@ void record_access_freq(int bgn_tmstmp_num, int* analyze_chunks_time_slots, int*
 	print_matrix(rcd_peer_chks, max_num_peer_chunks, poten_crrltd_cnt);
 #endif
 
-	free(start_search_posi);
+	//printf("free start_search_posi:\n");
+
+	free(start_search_posi);
+
+    //printf("<----- record_access_freq\n");
 
 }
 
@@ -1168,6 +1185,7 @@ void stripe_orgnzt(int* caso_crltd_mtrx, int* caso_crltd_dgr_mtrix, int num_corr
 	printf("caso_crltd_dgr_mtrix:\n");
 	print_matrix(caso_crltd_dgr_mtrix, max_num_relevent_chunks_per_chunk, num_correlated_chunk);
 #endif
+
 	// initiate the unrelevant chunks and their indices
 	int stripe_count;
 	int temp_count;
@@ -1309,8 +1327,6 @@ void stripe_orgnzt(int* caso_crltd_mtrx, int* caso_crltd_dgr_mtrix, int num_corr
 			// if there still exists relevant chunks, then organize the chunks that owns largest priority
 			if(flag==1){
 
-				//printf("temp_count=%d, temp_max=%d\n", temp_count, temp_max);
-
 				//record the index 
 				stripe_chnk_idx_in_crrltn_set[temp_count]=select_chunk_index;
 
@@ -1357,6 +1373,7 @@ void stripe_orgnzt(int* caso_crltd_mtrx, int* caso_crltd_dgr_mtrix, int num_corr
 	printf("before_sort: ognzd_crrltd_chnk\n");
 	print_matrix(sort_ognzd_crrltd_chnk, ognz_crrltd_cnt, 1);
 #endif
+
 	// init the index 
 	sort_ognzd_crrltd_chnk_index=(int*)malloc(sizeof(int)*ognz_crrltd_cnt);
 
@@ -1562,6 +1579,8 @@ void caso_stripe_ognztn(char *trace_name,  int *analyze_chunks_time_slots, int *
 	//calculate correlated chunk num
 	num_correlated_chunk=0;
 	peer_count=0;
+
+	//printf("record_access_freq\n");
 
 	for(i=0; i<poten_crrltd_cnt; i++){
 
@@ -1989,8 +2008,6 @@ int psw_time_caso(char *trace_name, char given_timestamp[], double *time){
 		// if it reaches the given timestamp
 		flag=1;
 
-		write_count++;
-
 		// get the access chunks 
 		trnsfm_char_to_int(offset, offset_int);
 		access_start_block=(*offset_int)/block_size;
@@ -2013,6 +2030,10 @@ int psw_time_caso(char *trace_name, char given_timestamp[], double *time){
 			gettimeofday(&end_time, NULL);
 			*time+=end_time.tv_sec-begin_time.tv_sec+(end_time.tv_usec-begin_time.tv_usec)*1.0/1000000;
 
+			//printf("the io_matrix of write_count-%d, io_count=%d\n", write_count, io_count);
+			//print_matrix(io_request, num_disk_stripe, stripe_count);
+			//printf("\n");
+
 			// re-initialize the io_request array
 			memset(io_request, 0, sizeof(int)*max_accessed_stripes*num_disk_stripe);
 			memset(stripes_per_timestamp, -1, sizeof(int)*max_accessed_stripes);
@@ -2028,6 +2049,8 @@ int psw_time_caso(char *trace_name, char given_timestamp[], double *time){
 			lg_count=0;
 
 			strcpy(pre_timestamp, round_timestamp); 
+
+		write_count++;
 
 		}
 
@@ -2232,6 +2255,10 @@ int psw_time_striping(char *trace_name, char given_timestamp[], double *time){
 			//system_partial_stripe_writes(io_request, stripes_per_timestamp, stripe_count, total_write_block_num);
 			gettimeofday(&end_time, NULL);
 			*time+=end_time.tv_sec-begin_time.tv_sec+(end_time.tv_usec-begin_time.tv_usec)*1.0/1000000;
+
+			//printf("the io_matrix of write_count-%d, io_count=%d\n", write_count, io_count);
+			//print_matrix(io_request, num_disk_stripe, stripe_count);
+			//printf("\n");
 
 			// re-initiate the stripes_per_timestamp
 			memset(io_request, 0, sizeof(int)*max_accessed_stripes*num_disk_stripe);
