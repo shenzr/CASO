@@ -134,7 +134,7 @@ echo -e "\nrsrch_2-rs\n"
 ./caso_pw_dr ../msr-traces/rsrch_2.csv 50 rs
 ./caso_pw_dr ../msr-traces/rsrch_2.csv 60 rs
 ./caso_pw_dr ../msr-traces/rsrch_2.csv 70 rs
-echo -e "\nrsrch_2-lrc test\n"
+echo -e "\nrsrch_2-lrc\n"
 ./caso_pw_dr ../msr-traces/rsrch_2.csv 10 lrc
 ./caso_pw_dr ../msr-traces/rsrch_2.csv 20 lrc
 ./caso_pw_dr ../msr-traces/rsrch_2.csv 30 lrc
@@ -142,7 +142,7 @@ echo -e "\nrsrch_2-lrc test\n"
 ./caso_pw_dr ../msr-traces/rsrch_2.csv 50 lrc
 ./caso_pw_dr ../msr-traces/rsrch_2.csv 60 lrc
 ./caso_pw_dr ../msr-traces/rsrch_2.csv 70 lrc
-echo -e "\nwdev_0-rs test\n"
+echo -e "\nwdev_0-rs\n"
 ./caso_pw_dr ../msr-traces/wdev_0.csv 10 rs
 ./caso_pw_dr ../msr-traces/wdev_0.csv 20 rs
 ./caso_pw_dr ../msr-traces/wdev_0.csv 30 rs
@@ -150,11 +150,11 @@ echo -e "\nwdev_0-rs test\n"
 ./caso_pw_dr ../msr-traces/wdev_0.csv 50 rs
 ./caso_pw_dr ../msr-traces/wdev_0.csv 60 rs
 ./caso_pw_dr ../msr-traces/wdev_0.csv 70 rs
-echo -e "\nwdev_0-lrc test\n"
-.caso_pw_dr ../msr-traces/wdev_0.csv 10 lrc
-.caso_pw_dr ../msr-traces/wdev_0.csv 20 lrc
-.caso_pw_dr ../msr-traces/wdev_0.csv 30 lrc
-.caso_pw_dr ../msr-traces/wdev_0.csv 40 lrc
-.caso_pw_dr ../msr-traces/wdev_0.csv 50 lrc
-.caso_pw_dr ../msr-traces/wdev_0.csv 60 lrc
-.caso_pw_dr ../msr-traces/wdev_0.csv 70 lrc
+echo -e "\nwdev_0-lrc\n"
+./caso_pw_dr ../msr-traces/wdev_0.csv 10 lrc
+./caso_pw_dr ../msr-traces/wdev_0.csv 20 lrc
+./caso_pw_dr ../msr-traces/wdev_0.csv 30 lrc
+./caso_pw_dr ../msr-traces/wdev_0.csv 40 lrc
+./caso_pw_dr ../msr-traces/wdev_0.csv 50 lrc
+./caso_pw_dr ../msr-traces/wdev_0.csv 60 lrc
+./caso_pw_dr ../msr-traces/wdev_0.csv 70 lrc
