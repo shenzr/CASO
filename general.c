@@ -2,7 +2,6 @@
 // (#the number of blocks requested with other blocks in more than 2 I/O operations)/(# the number of accessed blocks in a workload)
 
 #define _GNU_SOURCE 
-#define __USE_LARGEFILE64
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -18,14 +17,17 @@
 #include <limits.h>
 #include <unistd.h>
 #include <assert.h>
+#include <stdint.h>
 
-#include "jerasure/jerasure.h"
-#include "jerasure/galois.h"
+#include "Jerasure/jerasure.h"
+#include "Jerasure/galois.h"
+#include "Jerasure/cauchy.h"
+#include "Jerasure/reed_sol.h"
 #include "config.h"
 
 #define inf 999999999
 #define talloc(type, num) (type *) malloc(sizeof(type)*(num))
-#define max_offset (2*1000*1000*1000-1) //KB
+#define disk_capacity 299 // GB
 
 int num_distinct_chunks_timestamp[num_assume_timestamp];
 int poten_crrltd_cnt;
@@ -51,6 +53,75 @@ void print_chunk_info(CHUNK_INFO* chunk_info){
 	printf("chunk_info->chunk_id_in_stripe = %d\n", chunk_info->chunk_id_in_stripe);
 	printf("chunk_info->lg_id = %d\n", chunk_info->lg_id);
 	printf("\n");
+
+}
+
+
+//generate a random string with the size of len
+void gene_radm_buff(char* buff, int len){
+
+    int i;
+	
+    char alphanum[]="0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
+
+    for(i=0; i<len; i++)
+        buff[i]=alphanum[i%(sizeof(alphanum)-1)];
+
+}
+
+
+void encode_data(char* data, char* pse_coded_data, int chunk_id, int updt_prty, int ecd_cef){
+
+    galois_w08_region_multiply(data, ecd_cef, block_size, pse_coded_data, 0);
+
+}
+
+
+// this function is to calculate the data delta of two regions
+void cal_delta(char* result, char* srcA, char* srcB, int length) {
+
+    int i;
+    int XorCount = length / sizeof(long);
+
+    uint64_t* srcA64 = (uint64_t*) srcA;
+    uint64_t* srcB64 = (uint64_t*) srcB;
+    uint64_t* result64 = (uint64_t*) result;
+
+    // finish all the word-by-word XOR
+    for (i = 0; i < XorCount; i++) {
+        result64[i] = srcA64[i] ^ srcB64[i];
+    }
+
+}
+
+
+// calculate the data delta 
+void aggregate_data(char** coding_delta, int updt_chnk_cnt, char* final_result){
+
+	char* mid_result=(char*)malloc(sizeof(char)*block_size);
+	char* temp;
+
+	int i;
+
+	for(i=0; i<updt_chnk_cnt; i++){
+
+		if(i==0){
+			mid_result=coding_delta[i];
+			continue;
+			}
+
+		cal_delta(final_result, mid_result, coding_delta[i], block_size);
+
+		temp=mid_result;
+		mid_result=final_result;
+		final_result=temp;
+
+		}
+
+	// the final data is stored in mid_result
+	memcpy(final_result, mid_result, sizeof(char)*block_size);
+	
+	free(mid_result);
 
 }
 
@@ -1719,131 +1790,287 @@ int calculate_chunk_num_io_matrix(int *io_matrix, int len, int width){
 // @accessed_stripes: records the involved stripes in a timestamp
 // @stripe_count: records the number of involved stripes in a timestamp
 // @io_matrix: if a chunk is accessed, then the corresponding cell is marked as 1
-/*
 void system_partial_stripe_writes(int *io_matrix, int *accessed_stripes, int stripe_count, int *total_write_block_num){
 
-   int i,j;
-   int io_amount;
-   int io_index;
-   int ret;
-   int matrix_width;
-   int pagesize;
-   int fd_disk[15];
-   int max_stripes;
+    int i,j;
+    int io_amount;
+    int io_index;
+    int ret;
+    int pagesize;
+    int fd_disk[15];
+	int stripe_id;
+	int rotation;
+	int num_disk_stripe;
+	int real_index;
 
-   max_stripes=max_offset/(block_size*erasure_k);
-//printf("max_stripes=%d\n", max_stripes);
+    // get the value of num_disk_stripe
+	if(strcmp(code_type, "rc")==0)
+		num_disk_stripe=erasure_k+erasure_m;
 
-pagesize=getpagesize();
-matrix_width=erasure_k+erasure_m;
+	else if (strcmp(code_type, "lrc")==0)
+		num_disk_stripe=erasure_k+erasure_m+num_lg;
 
-//count the io amount
-io_amount=calculate_chunk_num_io_matrix(io_matrix, stripe_count, erasure_k+erasure_m);
+	else {
 
- *total_write_block_num+=io_amount;
-
-//record the name of disk array
-char *disk_array[15]={"/dev/sde","/dev/sdf","/dev/sdg","/dev/sdh","/dev/sdi","/dev/sdj","/dev/sdk","/dev/sdl","/dev/sdm","/dev/sdn",
-"/dev/sdo","/dev/sdp","/dev/sdq","/dev/sdr","/dev/sds"};
-
-
-//record the start point and end point for each i/o
-struct aiocb* aio_list = (struct aiocb*)malloc(sizeof(struct aiocb)*io_amount);
-
-bzero(aio_list, sizeof (struct aiocb)*io_amount);
-
-io_index=0;
-srand((int)time(0)); 
-
-for(i=0;i<matrix_width;i++){
-
-fd_disk[i]=open64(disk_array[i], O_RDWR | O_DIRECT | O_SYNC);
-
-if(fd_disk[i]<0){
-printf("openfile failed, i=%d\n",i);
-exit(1);
-}
-
-for(j=0; j<stripe_count; j++){
-
-// if there is an io request, then initiate the aio_structure
-if(io_matrix[j*matrix_width+i]==1){
-
-aio_list[io_index].aio_fildes=fd_disk[i];
-aio_list[io_index].aio_nbytes=block_size;
-// make sure that the offset should not exceed the disk capacity. 
-aio_list[io_index].aio_offset=(accessed_stripes[j]%max_stripes*block_size);
-aio_list[io_index].aio_reqprio=0;
-ret = posix_memalign((void**)&aio_list[io_index].aio_buf, pagesize, block_size);
-io_index++;
-}
-}
-}
-
-// perform the read operations
-for(i=0;i<io_index;i++){
-
-ret=aio_read(&aio_list[i]);
-if(ret<0)
-perror("aio_read");
-}
-
-
-for(i=0;i<io_index;i++){
-
-while(aio_error(&aio_list[i]) == EINPROGRESS);
-if((ret = aio_return(&aio_list[i]))==-1){ 
-	printf("io_index=%d, io_amount=%d\n", io_index, io_amount);
-	printf("aio_offset=%lld\n", aio_list[i].aio_offset);
-	printf("%d-th aio_read_offset=%.2lfMB\n", i, aio_list[i].aio_offset*1.0/1024/1024);
-	printf("aio_read_return error, ret=%d, io_no=%d\n",ret,i);
-	printf("accessed_stripes:\n");
-	print_matrix(accessed_stripes, stripe_count, 1);
-}
-
-}
-
-int *encoding_matrix;
-char **data, **coding;
-
-encoding_matrix = talloc(int, erasure_m*erasure_k);
-for (i = 0; i < erasure_m; i++) {
-	for (j = 0; j < erasure_k; j++) {
-		encoding_matrix[i*erasure_k+j] = galois_single_divide(1, i ^ (erasure_m + j), erasure_w);
-	}
-}
-
-jerasure_matrix_encode(erasure_k, erasure_m, erasure_w, encoding_matrix, data, coding, block_size);
-
-
-// perform the write operations 
-
-for(i=0;i<io_index;i++){
-
-	ret=aio_write(&aio_list[i]);
-	if(ret<0){
-		perror("aio_write");
+		printf("ERR: num_disk_stripe\n");
 		exit(1);
-	}
+
+		}
+
+    pagesize=getpagesize();
+
+    //count the io amount
+    io_amount=calculate_chunk_num_io_matrix(io_matrix, stripe_count, erasure_k+erasure_m);
+
+    *total_write_block_num+=io_amount;
+
+    //record the name of disk array
+    char *disk_array[15]={"/dev/sde","/dev/sdf","/dev/sdg","/dev/sdh","/dev/sdi","/dev/sdj","/dev/sdk","/dev/sdl","/dev/sdm","/dev/sdn",
+        "/dev/sdo","/dev/sdp","/dev/sdq","/dev/sdr","/dev/sds"};
+
+
+    //record the start point and end point for each i/o
+    struct aiocb* aio_list = (struct aiocb*)malloc(sizeof(struct aiocb)*io_amount);
+	int* chunk_index=(int*)malloc(sizeof(int)*io_amount);
+
+    bzero(aio_list, sizeof (struct aiocb)*io_amount);
+	memset(chunk_index, -1, sizeof(int)*io_amount);
+
+    io_index=0;
+    for(i=0; i<num_disk_stripe; i++){
+
+        fd_disk[i]=open(disk_array[i], O_RDWR | O_DIRECT | O_SYNC);
+
+        if(fd_disk[i]<0){
+            printf("openfile failed, i=%d\n",i);
+            exit(1);
+            }
+
+        for(j=0; j<stripe_count; j++){
+
+			stripe_id=accessed_stripes[j];
+			rotation=stripe_id%num_disk_stripe;
+ 
+            // if there is an io request, then initiate the aio_structure
+            if(io_matrix[j*num_disk_stripe+i]==1){
+
+				// record the updated chunk index 
+				real_index=i-rotation;
+				if(real_index<0)
+					real_index+=num_disk_stripe;
+				
+				chunk_index[io_index]=stripe_id*num_disk_stripe+real_index;
+
+                // initialize the aio info
+                aio_list[io_index].aio_fildes=fd_disk[i];
+                aio_list[io_index].aio_nbytes=block_size;
+			
+                // make sure that the offset should not exceed the disk capacity. 
+                aio_list[io_index].aio_offset=(long long)(accessed_stripes[j]*block_size);
+                aio_list[io_index].aio_reqprio=0;
+                ret = posix_memalign((void**)&aio_list[io_index].aio_buf, pagesize, block_size);
+                io_index++;
+            }
+          }
+    }
+
+    // perform the read operations
+    for(i=0;i<io_index;i++){
+
+        ret=aio_read(&aio_list[i]);
+        if(ret<0)
+            perror("aio_read");
+    }
+
+
+    for(i=0;i<io_index;i++){
+
+        while(aio_error(&aio_list[i]) == EINPROGRESS);
+        if((ret = aio_return(&aio_list[i]))==-1){ 
+	        printf("io_index=%d, io_amount=%d\n", io_index, io_amount);
+	        printf("aio_offset=%lld\n", (long long)aio_list[i].aio_offset);
+	        printf("%d-th aio_read_offset=%.2lfMB\n", i, aio_list[i].aio_offset*1.0/1024/1024);
+	        printf("aio_read_return error, ret=%d, io_no=%d\n",ret,i);
+	        printf("accessed_stripes:\n");
+	        print_matrix(accessed_stripes, stripe_count, 1);
+        }
+    }
+
+    // perform encoding operation 
+    int* rs_encoding_matrix;
+    char** data_delta;
+	char** coding_delta;
+
+	data_delta=(char**)malloc(sizeof(char*)*erasure_k);
+	coding_delta=(char**)malloc(sizeof(char*)*erasure_k);
+
+	for(i=0; i<erasure_k; i++)
+		data_delta[i]=(char*)malloc(sizeof(char)*block_size);
+
+	for(i=0; i<erasure_k; i++)
+		coding_delta[i]=(char*)malloc(sizeof(char)*block_size);
+
+	
+    // get extention matrix of rs codes
+    rs_encoding_matrix = talloc(int, erasure_m*erasure_k);
+    for (i = 0; i < erasure_m; i++) {
+	    for (j = 0; j < erasure_k; j++) 
+		    rs_encoding_matrix[i*erasure_k+j] = galois_single_divide(1, i ^ (erasure_m + j), erasure_w);
+    }
+
+	// perform the update operations in memory
+	int* updt_chunk_stripe=(int*)malloc(sizeof(int)*num_disk_stripe);
+	char* new_data=(char*)malloc(sizeof(char)*block_size);
+	char* new_parity=(char*)malloc(sizeof(char)*block_size);
+	char* final_coding_delta=(char*)malloc(sizeof(char)*block_size);
+	int  updt_mrk_stripe[erasure_k];
+	
+	int search_start;
+	int chunk_id_stripe;
+	int updt_chnk_cnt;
+	int k;
+	int global_prty_id, local_prty_id;
+	int num_data_chunk_lg;
+
+	num_data_chunk_lg=erasure_k/num_lg;
+
+	printf("num_data_chunk_lg=%d\n",num_data_chunk_lg);
+
+	search_start=0;
+	for(i=0; i<stripe_count; i++){
+
+		memset(updt_chunk_stripe, 0, sizeof(int)*num_disk_stripe);
+		memset(updt_mrk_stripe, -1, sizeof(int)*erasure_k);
+
+		stripe_id=accessed_stripes[i];
+		rotation=stripe_id%num_disk_stripe;
+
+		updt_chnk_cnt=0;
+
+        // calculate the data delta
+		for(j=search_start; j<io_index; j++){
+
+			if(chunk_index[j]/num_disk_stripe!=stripe_id)
+				break;
+
+			chunk_id_stripe=chunk_index[j]%num_disk_stripe;
+
+			// if it is a data chunk
+			if(chunk_id_stripe<erasure_k){
+
+				// record the update
+				updt_mrk_stripe[updt_chnk_cnt]=chunk_id_stripe;
+
+				// generate random buff
+				gene_radm_buff(new_data, block_size);
+
+				// calculate the xor diff
+				cal_delta(data_delta[updt_chnk_cnt], (char*)aio_list[j].aio_buf, new_data, block_size);
+
+				// update the data 
+				memcpy((char*)aio_list[j].aio_buf, new_data, sizeof(int)*block_size);
+
+				// increase the record
+				updt_chnk_cnt++;
+				
+				}
+			}
+
+		// calculate the parity delta 
+		for(j=search_start; j<io_index; j++){
+
+			if(chunk_index[j]/num_disk_stripe!=stripe_id)
+				break;
+
+			chunk_id_stripe=chunk_index[j]%num_disk_stripe;
+
+			// if it is a parity chunk 
+			if(chunk_id_stripe>=erasure_k){
+
+                // if it is global parity 
+				if((strcmp(code_type, "rs")==0) || (strcmp(code_type, "lrc")==0 && chunk_id_stripe>=erasure_k+num_lg)){
+
+                    // determine global parity id
+					if(strcmp(code_type, "rs")==0)
+						global_prty_id=chunk_id_stripe-erasure_k;
+
+					else
+						global_prty_id=chunk_id_stripe-erasure_k-num_lg;
+
+					for(k=0; k<updt_chnk_cnt; k++)
+						encode_data(data_delta[k], coding_delta[k], updt_mrk_stripe[k], global_prty_id, rs_encoding_matrix[global_prty_id*erasure_k+chunk_id_stripe]);
+
+					// aggregate the data
+					aggregate_data(coding_delta, updt_chnk_cnt, final_coding_delta);
+
+					// calculate the new parity chunk by xoring 
+					cal_delta(new_parity, final_coding_delta, (char*)aio_list[j].aio_buf, block_size); 
+
+					// copy the new parity 
+					memcpy((char*)aio_list[j].aio_buf, new_parity, block_size);
+
+					}
+
+				else if ((strcmp(code_type, "lrc")==0) && (chunk_id_stripe<erasure_k+num_lg)){
+
+					// calculate the local parity 
+					local_prty_id=chunk_id_stripe-erasure_k+1;
+
+                    // identify the updated data chunks in the local group
+					for(k=0; k<updt_chnk_cnt; k++){
+
+						if(chunk_index[k]/num_data_chunk_lg==local_prty_id){
+
+							cal_delta(new_parity, data_delta[k], (char*)aio_list[j].aio_buf, block_size);
+							aio_list[j].aio_buf=new_parity;
+
+							}
+						}
+					}
+				}
+			}
+		}
+
+    // perform the write operations 
+    for(i=0;i<io_index;i++){
+
+	    ret=aio_write(&aio_list[i]);
+	    if(ret<0){
+		    perror("aio_write");
+		    exit(1);
+	    }
+    }
+
+    for(i=0;i<io_index;i++){
+
+	    while(aio_error(&aio_list[i]) == EINPROGRESS);
+	    if((ret = aio_return(&aio_list[i]))==-1)
+		    printf("aio_write_return error, ret=%d, io_no=%d\n",ret,i);
+    }
+
+    // close the files
+    for(i=0; i<num_disk_stripe; i++)
+		close(fd_disk[i]);
+
+    free(aio_list);
+	free(chunk_index);
+	free(updt_chunk_stripe);
+	free(new_data);
+	free(final_coding_delta);
+	free(new_parity);
+
+	for(i=0; i<erasure_k; i++){
+
+		free(data_delta[i]);
+		free(coding_delta[i]);
+
+		}
+
+	free(data_delta);
+	free(coding_delta);
+
 }
 
-for(i=0;i<io_index;i++){
-
-	while(aio_error(&aio_list[i]) == EINPROGRESS);
-	if((ret = aio_return(&aio_list[i]))==-1)
-		printf("aio_write_return error, ret=%d, io_no=%d\n",ret,i);
-
-}
-
-//free the aio structure 
-free(aio_list);
-
-for(i=0;i<matrix_width;i++)
-close(fd_disk[i]);
-
-
-}
-*/
 
 void get_chnk_info(int chunk_id, CHUNK_INFO* chunk_info){
 
@@ -2026,7 +2253,7 @@ int psw_time_caso(char *trace_name, char given_timestamp[], double *time){
 
 			// perform system write
 			gettimeofday(&begin_time, NULL);
-			//system_partial_stripe_writes(io_request, stripes_per_timestamp, stripe_count, total_caso_io);
+			system_partial_stripe_writes(io_request, stripes_per_timestamp, stripe_count, total_caso_io);
 			gettimeofday(&end_time, NULL);
 			*time+=end_time.tv_sec-begin_time.tv_sec+(end_time.tv_usec-begin_time.tv_usec)*1.0/1000000;
 
@@ -2665,99 +2892,6 @@ int degraded_reads(int *io_request, int *stripe_id_array, int stripe_count, int 
 
 	return flag;
 }
-
-
-
-// @accessed_stripes: records the involved stripes in a timestamp
-// @stripe_count: records the number of involved stripes in a timestamp
-// @io_matrix: if a chunk is accessed, then the corresponding cell is marked as 1
-/*
-   void system_parallel_reads(int *io_matrix, int *accessed_stripes, int stripe_count, int *total_write_block_num){
-
-   int i,j;
-   int io_amount;
-   int io_index;
-   int ret;
-   int matrix_width;
-   int pagesize;
-   int fd_disk[15];
-   int max_stripes;
-
-   max_stripes=max_offset/(block_size*erasure_k);
-//printf("max_stripes=%d\n", max_stripes);
-
-pagesize=getpagesize();
-matrix_width=erasure_k+erasure_m;
-
-//count the io amount
-io_amount=calculate_chunk_num_io_matrix(io_matrix, stripe_count, erasure_k+erasure_m);
-
- *total_write_block_num+=io_amount;
-
-//record the name of disk array
-char *disk_array[15]={"/dev/sde","/dev/sdf","/dev/sdg","/dev/sdh","/dev/sdi","/dev/sdj","/dev/sdk","/dev/sdl","/dev/sdm","/dev/sdn",
-"/dev/sdo","/dev/sdp","/dev/sdq","/dev/sdr","/dev/sds"};
-
-//record the start point and end point for each i/o
-struct aiocb *aio_list = (struct aiocb *)malloc(sizeof(struct aiocb)*io_amount);
-
-bzero(aio_list, sizeof (struct aiocb)*io_amount);
-
-io_index=0;
-
-for(i=0;i<matrix_width;i++){
-
-fd_disk[i]=open64(disk_array[i], O_RDWR | O_DIRECT);
-
-if(fd_disk[i]<0)
-printf("openfile failed, i=%d\n",i);
-
-for(j=0; j<stripe_count; j++){
-
-// if there is an io request, then initiate the aio_structure
-if(io_matrix[j*matrix_width+i]==1){
-
-aio_list[io_index].aio_fildes=fd_disk[i];
-aio_list[io_index].aio_nbytes=block_size;
-// make sure that the offset should not exceed the disk capacity. 
-aio_list[io_index].aio_offset=accessed_stripes[j]%max_stripes*block_size;
-aio_list[io_index].aio_reqprio=0;
-ret = posix_memalign((void**)&aio_list[io_index].aio_buf, pagesize, block_size);
-io_index++;
-}
-}
-}
-
-// perform the read operations
-for(i=0;i<io_index;i++){
-
-ret=aio_read(&aio_list[i]);
-if(ret<0)
-perror("aio_read");
-
-}
-
-for(i=0;i<io_index;i++){
-
-while(aio_error(&aio_list[i]) == EINPROGRESS);
-if((ret = aio_return(&aio_list[i]))==-1){ 
-printf("io_index=%d, io_amount=%d\n", io_index, io_amount);
-printf("%d-th aio_read_offset=%.2lfMB\n", i, aio_list[i].aio_offset*1.0/1024/1024);
-printf("aio_read_return error, ret=%d, io_no=%d\n",ret,i);
-}
-
-}
-
-
-free(aio_list);
-
-for(i=0;i<matrix_width;i++)
-close(fd_disk[i]);
-
-
-}
-*/
-
 
 void dr_time_caso(char *trace_name, char given_timestamp[], int *num_extra_io, double *time){
 

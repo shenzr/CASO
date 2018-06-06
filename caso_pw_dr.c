@@ -12,9 +12,6 @@
 #include "config.h"
 #include "general.h"
 
-#define chunk_size_kb_unit block_size/1024
-#define disk_capacity 1024*1024*100
-
 int main(int argc, char *argv[]){
 
   if(argc!=4){
@@ -134,8 +131,8 @@ int main(int argc, char *argv[]){
 
   /* ========== Perform partial stripe writes ========= */
   //printf("+++++++++ partial stripe writes test +++++++++\n");
-  psw_time_caso(argv[1],begin_timestamp, caso_time);
-  psw_time_striping(argv[1], begin_timestamp, striping_time);
+  //psw_time_caso(argv[1],begin_timestamp, caso_time);
+  //psw_time_striping(argv[1], begin_timestamp, striping_time);
   //psw_time_continugous(argv[1], begin_timestamp,continugous_time);
 
   /* ========== Perform degraded reads ========= */
@@ -152,8 +149,8 @@ int main(int argc, char *argv[]){
   continugous_num_extra_io=&e;
 
   //printf("+++++++++ degraded read test +++++++++\n");
-  //dr_time_caso(argv[1], begin_timestamp, caso_num_extra_io, caso_time); 
-  //dr_time_striping(argv[1], begin_timestamp, striping_num_extra_io, striping_time);
+  dr_time_caso(argv[1], begin_timestamp, caso_num_extra_io, caso_time); 
+  dr_time_striping(argv[1], begin_timestamp, striping_num_extra_io, striping_time);
   //dr_time_continugous(argv[1], begin_timestamp, continugous_num_extra_io, continugous_time);
 
   //printf("caso_dr_extra_io_per_disk_failure=%.2lf, striping_dr_extra_io_per_disk_failure=%.2lf, continugous_dr_extra_io_per_disk_failure=%.2lf\n\n", 
