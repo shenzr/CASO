@@ -41,6 +41,6 @@ extern void sorting_trace_access_pattern();
 
 extern void binary_search(int array[], int num, int value);
 
-extern void encode_data(char* data, char* pse_coded_data, int chunk_id, int updt_prty, int ecd_cef);
+extern void encode_data(char* data, char* pse_coded_data, int ecd_cef);
 
 extern void caso_stripe_ognztn(char *trace_name,  int *analyze_chunks_time_slots, int *num_chunk_per_timestamp, int bgn_tmstmp_num, int* sort_caso_rcd_pattern, int* sort_caso_rcd_index, int* sort_caso_rcd_freq);

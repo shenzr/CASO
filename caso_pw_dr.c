@@ -33,10 +33,6 @@ int main(int argc, char *argv[]){
   max_access_chunks_per_timestamp=-1;
   num_rele_chunks=0;
 
-  // printf("lg_prty_num=%d\n", lg_prty_num);
-
-  //printf("\n+++++++ trace=%s, ratio=%.1lf, code_type=%s ========\n", argv[1], begin_stripe_ratio, code_type);
-
   /* ====== judge the input code_type ======*/
 
   if(strcmp(code_type, "rs")==0)
@@ -51,7 +47,13 @@ int main(int argc, char *argv[]){
 	exit(1);
 
   	}
-  
+
+  if(strcmp(code_type, "rs")==0)
+  	printf("\n+++++++ trace=%s, RS(%d,%d) ========\n", argv[1], erasure_k, erasure_m);
+
+  else if(strcmp(code_type, "lrc")==0)
+  	printf("\n+++++++ trace=%s, LRC(%d,2,%d) ========\n", argv[1], erasure_k, erasure_m);
+
   struct timeval bg_tm, ed_tm;
 
   memset(access_bucket, -1, sizeof(int)*max_aces_blk_num);
@@ -131,8 +133,8 @@ int main(int argc, char *argv[]){
 
   /* ========== Perform partial stripe writes ========= */
   //printf("+++++++++ partial stripe writes test +++++++++\n");
-  //psw_time_caso(argv[1],begin_timestamp, caso_time);
-  //psw_time_striping(argv[1], begin_timestamp, striping_time);
+  psw_time_striping(argv[1], begin_timestamp, striping_time);
+  psw_time_caso(argv[1],begin_timestamp, caso_time);
   //psw_time_continugous(argv[1], begin_timestamp,continugous_time);
 
   /* ========== Perform degraded reads ========= */
@@ -149,8 +151,8 @@ int main(int argc, char *argv[]){
   continugous_num_extra_io=&e;
 
   //printf("+++++++++ degraded read test +++++++++\n");
-  dr_time_caso(argv[1], begin_timestamp, caso_num_extra_io, caso_time); 
-  dr_time_striping(argv[1], begin_timestamp, striping_num_extra_io, striping_time);
+  //dr_time_caso(argv[1], begin_timestamp, caso_num_extra_io, caso_time); 
+  //dr_time_striping(argv[1], begin_timestamp, striping_num_extra_io, striping_time);
   //dr_time_continugous(argv[1], begin_timestamp, continugous_num_extra_io, continugous_time);
 
   //printf("caso_dr_extra_io_per_disk_failure=%.2lf, striping_dr_extra_io_per_disk_failure=%.2lf, continugous_dr_extra_io_per_disk_failure=%.2lf\n\n", 
