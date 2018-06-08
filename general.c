@@ -1822,8 +1822,10 @@ void system_partial_stripe_writes(int *io_matrix, int *accessed_stripes, int str
     //count the io amount
     io_amount=calculate_chunk_num_io_matrix(io_matrix, stripe_count, num_disk_stripe);
 
-	//printf("\nio_matrix:\n");
-	//print_matrix(io_matrix, num_disk_stripe, stripe_count);
+#if debug
+	printf("\nio_matrix:\n");
+	print_matrix(io_matrix, num_disk_stripe, stripe_count);
+#endif
 
     *total_write_block_num+=io_amount;
 
@@ -1899,9 +1901,11 @@ void system_partial_stripe_writes(int *io_matrix, int *accessed_stripes, int str
         }
     }
 
-    //printf("updt_chnk_io_map:\n");
-	//print_matrix(updt_chnk_io_map, num_disk_stripe, stripe_count);
-	
+#if debug
+    printf("updt_chnk_io_map:\n");
+	print_matrix(updt_chnk_io_map, num_disk_stripe, stripe_count);
+#endif
+
     // perform encoding operation 
     int* rs_encoding_matrix;
     char** data_delta;
@@ -1929,16 +1933,16 @@ void system_partial_stripe_writes(int *io_matrix, int *accessed_stripes, int str
 	char* new_data=(char*)malloc(sizeof(char)*block_size);
 	char* new_parity=(char*)malloc(sizeof(char)*block_size);
 	char* final_coding_delta=(char*)malloc(sizeof(char)*block_size);
+	char** temp_data_delta=(char**)malloc(sizeof(char*)*erasure_k);
+
 	int  updt_mrk_stripe[erasure_k];
-	
 	int chunk_id_stripe;
 	int updt_chnk_cnt;
 	int k;
 	int global_prty_id, local_prty_id;
 	int num_data_chunk_lg;
 	int io_id;
-	char* mid;
-	char* lp_addr;
+	int temp_cnt;
 
 	num_data_chunk_lg=erasure_k/num_lg;
 
@@ -1994,8 +1998,10 @@ void system_partial_stripe_writes(int *io_matrix, int *accessed_stripes, int str
 
 		//printf("update data\n");
 
-		//printf("updt_chnk_cnt=%d, updt_mrk_stripe:\n", updt_chnk_cnt);
-		//print_matrix(updt_mrk_stripe, updt_chnk_cnt, 1);
+#if debug
+		printf("updt_chnk_cnt=%d, updt_mrk_stripe:\n", updt_chnk_cnt);
+		print_matrix(updt_mrk_stripe, updt_chnk_cnt, 1);
+#endif
 
 		// calculate the parity delta 
 		for(j=0; j<num_disk_stripe; j++){
@@ -2013,7 +2019,6 @@ void system_partial_stripe_writes(int *io_matrix, int *accessed_stripes, int str
 			if(chunk_id_stripe>=erasure_k){
 
 				//printf("global parity: chunk_id_stripe=%d\n", chunk_id_stripe);
-
 				io_id=updt_chnk_io_map[i*num_disk_stripe+j];
 
                 // if it is global parity 
@@ -2045,43 +2050,34 @@ void system_partial_stripe_writes(int *io_matrix, int *accessed_stripes, int str
 					// calculate the local parity 
 					local_prty_id=chunk_id_stripe-erasure_k;
 
-					//printf("local_prty_id=%d\n", local_prty_id);
+#if debug
+	printf("local_prty_id=%d\n", local_prty_id);
+	printf("lp_addr=%p\n", lp_addr);
+	printf("num_data_chunk_lg=%d, index=%d\n", num_data_chunk_lg, j);
+    printf("updt_mrk_stripe:\n");
+	print_matrix(updt_mrk_stripe, updt_chnk_cnt, 1);
+#endif
 
-					// assign the addr to a variable
-					lp_addr=(char*)(aio_list[io_id].aio_buf);
-
-					//printf("lp_addr=%p\n", lp_addr);
-					//printf("num_data_chunk_lg=%d, index=%d\n", num_data_chunk_lg, j);
-					
-                    //printf("updt_mrk_stripe:\n");
-					//print_matrix(updt_mrk_stripe, updt_chnk_cnt, 1);
-					
-                    // identify the updated data chunks in the local group
+                    temp_cnt=0;
 					for(k=0; k<updt_chnk_cnt; k++){
-
+						
 						if(updt_mrk_stripe[k]/num_data_chunk_lg==local_prty_id){
 
-							//printf("k=%d, num_data_chunk_lg=%d, updt_mrk_stripe[k]=%d, index=%d\n", k, num_data_chunk_lg, updt_mrk_stripe[k], j);
-
-							cal_delta(new_parity, data_delta[k], lp_addr, block_size);
-
-							//printf("before: mid=%p, lp_addr=%p, new_parity=%p\n", mid, lp_addr, new_parity);
-
-							mid=new_parity;
-							new_parity=lp_addr;
-							lp_addr=mid;
-
-							//printf("after: mid=%p, lp_addr=%p, new_parity=%p\n", mid, lp_addr, new_parity);
+							temp_data_delta[temp_cnt]=data_delta[k];
+							temp_cnt++;
 
 							}
 						}
 
-					// memcpy the new parity 
-					if((char*)(aio_list[io_id].aio_buf)!=mid)
-						memcpy((char*)aio_list[io_id].aio_buf, mid, sizeof(char)*block_size);
+					// aggregate the data delta 
+					aggregate_data(temp_data_delta, temp_cnt, new_data);
 
-					//printf("(char*)aio_list[j].aio_buf=%p\n", (char*)aio_list[j].aio_buf);
-					
+					// generate the new parity 
+					cal_delta(new_parity, new_data, (char*)(aio_list[io_id].aio_buf), block_size);
+
+					// copy the new parity 
+					memcpy((char*)(aio_list[io_id].aio_buf), new_parity, block_size);
+
 					}
 				}
 			}	
@@ -2108,8 +2104,10 @@ void system_partial_stripe_writes(int *io_matrix, int *accessed_stripes, int str
     for(i=0; i<num_disk_stripe; i++)
 		close(fd_disk[i]);
 
+	//printf("io_amount=%d, io_index=%d\n", io_amount, io_index);
+
 	for(i=0; i<io_index; i++)
-		free((char*)aio_list[io_id].aio_buf);
+		free((char*)(aio_list[i].aio_buf));
 
     free(aio_list);
 	free(updt_chunk_stripe);
@@ -2128,6 +2126,8 @@ void system_partial_stripe_writes(int *io_matrix, int *accessed_stripes, int str
 	free(coding_delta);
 	free(rs_encoding_matrix);
 	free(updt_chnk_io_map);
+	free(temp_data_delta);
+	
 
 }
 
