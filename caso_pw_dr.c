@@ -133,8 +133,8 @@ int main(int argc, char *argv[]){
 
   /* ========== Perform partial stripe writes ========= */
   //printf("+++++++++ partial stripe writes test +++++++++\n");
-  psw_time_striping(argv[1], begin_timestamp, striping_time);
   psw_time_caso(argv[1],begin_timestamp, caso_time);
+  psw_time_striping(argv[1], begin_timestamp, striping_time);
   //psw_time_continugous(argv[1], begin_timestamp,continugous_time);
 
   /* ========== Perform degraded reads ========= */
@@ -180,6 +180,7 @@ int main(int argc, char *argv[]){
   free(sort_ognzd_crrltd_chnk);
   free(sort_ognzd_crrltd_chnk_index);
   free(ognzd_crrltd_chnk_lg);
+  free(ognzd_crrltd_chnk_id_stripe);
 
   return 0;
 

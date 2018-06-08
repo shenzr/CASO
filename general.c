@@ -98,7 +98,7 @@ void cal_delta(char* result, char* srcA, char* srcB, int length) {
 // calculate the data delta 
 void aggregate_data(char** coding_delta, int updt_chnk_cnt, char* final_result){
 
-	char* mid_result;
+	char* mid_result=NULL;
 	char* temp;
 	int i;
 
@@ -1207,6 +1207,9 @@ void lrc_local_group_orgnzt(int* stripe_chnk_crrltn_dgr, int* stripe_chnk_idx_in
             // update the local group 
 			ognzd_crrltd_chnk_lg[stripe_id*erasure_k+stripe_chunk_idx]=i;
 
+			// update the chunk id in lrc stripe
+			ognzd_crrltd_chnk_id_stripe[stripe_id*erasure_k+stripe_chunk_idx]=i*num_chunk_per_lg+j;
+
 		}
 
 	}
@@ -1276,9 +1279,11 @@ void stripe_orgnzt(int* caso_crltd_mtrx, int* caso_crltd_dgr_mtrix, int num_corr
 
 	sort_ognzd_crrltd_chnk=(int*)malloc(sizeof(int)*erasure_k*max_crrltd_stripe);
 	ognzd_crrltd_chnk_lg=(int*)malloc(sizeof(int)*erasure_k*max_crrltd_stripe);
+	ognzd_crrltd_chnk_id_stripe=(int*)malloc(sizeof(int)*erasure_k*max_crrltd_stripe);
 	
 	memset(sort_ognzd_crrltd_chnk, -1, sizeof(int)*erasure_k*max_crrltd_stripe);
 	memset(ognzd_crrltd_chnk_lg, -1, sizeof(int)*erasure_k*max_crrltd_stripe);
+	memset(ognzd_crrltd_chnk_id_stripe, -1, sizeof(int)*erasure_k*max_crrltd_stripe);
 
     // organize the correlated stripes first 
 	for(stripe_count=0; stripe_count<max_crrltd_stripe; stripe_count++){
@@ -1633,7 +1638,7 @@ void caso_stripe_ognztn(char *trace_name,  int *analyze_chunks_time_slots, int *
 			}
 		}
 
-	//printf("poten_crrltd_cnt=%d\n",poten_crrltd_cnt);
+	//printf("poten_crrltd_cnt=%d, max_num_peer_chunks=%d\n",poten_crrltd_cnt, max_num_peer_chunks);
 
 	int* rcd_peer_chks=(int*)malloc(poten_crrltd_cnt*sizeof(int)*max_num_peer_chunks);  // record the peer chunks with each potential correlated chunk in caso analysis
 	int* freq_peer_chks=(int*)malloc(poten_crrltd_cnt*sizeof(int)*max_num_peer_chunks); // record the number of times that are accessed together 
@@ -1701,7 +1706,6 @@ void caso_stripe_ognztn(char *trace_name,  int *analyze_chunks_time_slots, int *
 	int num_crrltd_stripe;
 
 	num_crrltd_stripe=num_correlated_chunk/erasure_k;
-	int* ognzd_stripe_idx=(int*)malloc(sizeof(int)*num_crrltd_stripe*erasure_k); // it records the index of correlated chunks of every stripe in the correlated set 
 
 	//extract the correlated data chunks and their degrees
 	extract_caso_crltd_chnk_dgr(caso_crltd_mtrx, caso_crltd_dgr_mtrix, rcd_peer_chks, freq_peer_chks, num_correlated_chunk, num_peer_chks);
@@ -1725,7 +1729,6 @@ void caso_stripe_ognztn(char *trace_name,  int *analyze_chunks_time_slots, int *
 	free(rcd_peer_chks);
 	free(crrltd_chnk_pttn_idx);
 	free(num_peer_chks);
-	free(ognzd_stripe_idx);
 	free(caso_poten_crrltd_chks);
 
 }
@@ -1798,7 +1801,7 @@ void system_partial_stripe_writes(int *io_matrix, int *accessed_stripes, int str
 	int stripe_id;
 	int rotation;
 	int num_disk_stripe;
-	int real_index;
+	int disk_id;
 
     // get the value of num_disk_stripe
 	if(strcmp(code_type, "rs")==0)
@@ -1819,10 +1822,8 @@ void system_partial_stripe_writes(int *io_matrix, int *accessed_stripes, int str
     //count the io amount
     io_amount=calculate_chunk_num_io_matrix(io_matrix, stripe_count, num_disk_stripe);
 
-#if debug
-	printf("io_matrix:\n");
-	print_matrix(io_matrix, num_disk_stripe, stripe_count);
-#endif
+	//printf("\nio_matrix:\n");
+	//print_matrix(io_matrix, num_disk_stripe, stripe_count);
 
     *total_write_block_num+=io_amount;
 
@@ -1833,38 +1834,33 @@ void system_partial_stripe_writes(int *io_matrix, int *accessed_stripes, int str
 
     //record the start point and end point for each i/o
     struct aiocb* aio_list = (struct aiocb*)malloc(sizeof(struct aiocb)*io_amount);
-	int* chunk_index=(int*)malloc(sizeof(int)*io_amount);
+	int* updt_chnk_io_map=(int*)malloc(sizeof(int)*stripe_count*num_disk_stripe);
 
     bzero(aio_list, sizeof (struct aiocb)*io_amount);
-	memset(chunk_index, -1, sizeof(int)*io_amount);
+	memset(updt_chnk_io_map, -1, sizeof(int)*stripe_count*num_disk_stripe);
 
-    io_index=0;
-    for(i=0; i<num_disk_stripe; i++){
+	// open the disks 
+	for(i=0; i<num_disk_stripe; i++){
 
-        fd_disk[i]=open64(disk_array[i], O_RDWR | O_DIRECT | O_SYNC);
+		fd_disk[i]=open64(disk_array[i], O_RDWR | O_DIRECT | O_SYNC);
 
         if(fd_disk[i]<0){
             printf("openfile failed, i=%d\n",i);
             exit(1);
             }
+		}
 
-        for(j=0; j<stripe_count; j++){
+	// init the io requests
+	io_index=0;
+	for(j=0; j<stripe_count; j++){
 
-			stripe_id=accessed_stripes[j];
-			rotation=stripe_id%num_disk_stripe;
- 
+		for(disk_id=0; disk_id<num_disk_stripe; disk_id++){
+
             // if there is an io request, then initiate the aio_structure
-            if(io_matrix[j*num_disk_stripe+i]==1){
-
-				// record the updated chunk index 
-				real_index=i-rotation;
-				if(real_index<0)
-					real_index+=num_disk_stripe;
-				
-				chunk_index[io_index]=stripe_id*num_disk_stripe+real_index;
+            if(io_matrix[j*num_disk_stripe+disk_id]==1){
 
                 // initialize the aio info
-                aio_list[io_index].aio_fildes=fd_disk[i];
+                aio_list[io_index].aio_fildes=fd_disk[disk_id];
                 aio_list[io_index].aio_nbytes=block_size;
 				
                 // make sure that the offset should not exceed the disk capacity. 
@@ -1875,15 +1871,12 @@ void system_partial_stripe_writes(int *io_matrix, int *accessed_stripes, int str
 				
                 aio_list[io_index].aio_reqprio=0;
                 ret = posix_memalign((void**)&aio_list[io_index].aio_buf, pagesize, block_size);
+
+				updt_chnk_io_map[j*num_disk_stripe+disk_id]=io_index;
                 io_index++;
             }
-          }
-    }
-
-#if debug
-	printf("chunk_index:\n");
-	print_matrix(chunk_index, io_index, 1);
-#endif
+        }
+	}
 
     // perform the read operations
     for(i=0;i<io_index;i++){
@@ -1892,7 +1885,6 @@ void system_partial_stripe_writes(int *io_matrix, int *accessed_stripes, int str
         if(ret<0)
             perror("aio_read");
     }
-
 
     for(i=0;i<io_index;i++){
 
@@ -1907,6 +1899,9 @@ void system_partial_stripe_writes(int *io_matrix, int *accessed_stripes, int str
         }
     }
 
+    //printf("updt_chnk_io_map:\n");
+	//print_matrix(updt_chnk_io_map, num_disk_stripe, stripe_count);
+	
     // perform encoding operation 
     int* rs_encoding_matrix;
     char** data_delta;
@@ -1936,18 +1931,19 @@ void system_partial_stripe_writes(int *io_matrix, int *accessed_stripes, int str
 	char* final_coding_delta=(char*)malloc(sizeof(char)*block_size);
 	int  updt_mrk_stripe[erasure_k];
 	
-	int search_start;
 	int chunk_id_stripe;
 	int updt_chnk_cnt;
 	int k;
 	int global_prty_id, local_prty_id;
 	int num_data_chunk_lg;
+	int io_id;
+	char* mid;
+	char* lp_addr;
 
 	num_data_chunk_lg=erasure_k/num_lg;
 
 	//printf("num_data_chunk_lg=%d\n",num_data_chunk_lg);
 
-	search_start=0;
 	for(i=0; i<stripe_count; i++){
 
 		//printf("---stripe-%d\n", accessed_stripes[i]);
@@ -1958,20 +1954,24 @@ void system_partial_stripe_writes(int *io_matrix, int *accessed_stripes, int str
 		stripe_id=accessed_stripes[i];
 		rotation=stripe_id%num_disk_stripe;
 
+		//printf("stripe_id=%d, rotation=%d\n", stripe_id, rotation);
+
 		updt_chnk_cnt=0;
 
         // calculate the data delta
-		for(j=0; j<io_index; j++){
+		for(j=0; j<num_disk_stripe; j++){
 
-			chunk_id_stripe=chunk_index[j]%num_disk_stripe;
-
-			if(chunk_index[j]/num_disk_stripe!=stripe_id)
+			if(io_matrix[i*num_disk_stripe+j]==0)
 				continue;
+
+			chunk_id_stripe=j-rotation;
+			if(chunk_id_stripe<0)
+				chunk_id_stripe+=num_disk_stripe;
 
 			// if it is a data chunk
 			if(chunk_id_stripe<erasure_k){
 
-				//printf("chunk_id_stripe=%d\n", chunk_id_stripe);
+				//printf("data_chunk: chunk_id_stripe=%d\n", chunk_id_stripe);
 
 				// record the update
 				updt_mrk_stripe[updt_chnk_cnt]=chunk_id_stripe;
@@ -1980,10 +1980,11 @@ void system_partial_stripe_writes(int *io_matrix, int *accessed_stripes, int str
 				gene_radm_buff(new_data, block_size);
 
 				// calculate the xor diff
-				cal_delta(data_delta[updt_chnk_cnt], (char*)aio_list[j].aio_buf, new_data, block_size);
+				io_id=updt_chnk_io_map[i*num_disk_stripe+j];
+				cal_delta(data_delta[updt_chnk_cnt], (char*)aio_list[io_id].aio_buf, new_data, block_size);
 
 				// update the data 
-				memcpy((char*)aio_list[j].aio_buf, new_data, sizeof(char)*block_size);
+				memcpy((char*)aio_list[io_id].aio_buf, new_data, sizeof(char)*block_size);
 
 				// increase the record
 				updt_chnk_cnt++;
@@ -1991,18 +1992,29 @@ void system_partial_stripe_writes(int *io_matrix, int *accessed_stripes, int str
 				}
 			}
 
+		//printf("update data\n");
+
+		//printf("updt_chnk_cnt=%d, updt_mrk_stripe:\n", updt_chnk_cnt);
+		//print_matrix(updt_mrk_stripe, updt_chnk_cnt, 1);
+
 		// calculate the parity delta 
-		for(j=0; j<io_index; j++){
+		for(j=0; j<num_disk_stripe; j++){
 
-			chunk_id_stripe=chunk_index[j]%num_disk_stripe;
-
-			if(chunk_index[j]/num_disk_stripe!=stripe_id)
+			if(io_matrix[i*num_disk_stripe+j]==0)
 				continue;
+
+			chunk_id_stripe=j-rotation;
+			if(chunk_id_stripe<0)
+				chunk_id_stripe+=num_disk_stripe;
+
+			//printf("j=%d, chunk_id_stripe=%d\n",j,chunk_id_stripe);
 
 			// if it is a parity chunk 
 			if(chunk_id_stripe>=erasure_k){
 
-				//printf("chunk_id_stripe=%d\n", chunk_id_stripe);
+				//printf("global parity: chunk_id_stripe=%d\n", chunk_id_stripe);
+
+				io_id=updt_chnk_io_map[i*num_disk_stripe+j];
 
                 // if it is global parity 
 				if((strcmp(code_type, "rs")==0) || (strcmp(code_type, "lrc")==0 && chunk_id_stripe>=erasure_k+num_lg)){
@@ -2021,28 +2033,55 @@ void system_partial_stripe_writes(int *io_matrix, int *accessed_stripes, int str
 					aggregate_data(coding_delta, updt_chnk_cnt, final_coding_delta);
 
 					// calculate the new parity chunk by xoring 
-					cal_delta(new_parity, final_coding_delta, (char*)aio_list[j].aio_buf, block_size); 
+					cal_delta(new_parity, final_coding_delta, (char*)aio_list[io_id].aio_buf, block_size); 
 
-					// copy the new parity 
-					memcpy((char*)aio_list[j].aio_buf, new_parity, sizeof(char)*block_size);
+					// update aio buff
+					memcpy((char*)aio_list[io_id].aio_buf, new_parity, sizeof(char)*block_size);
 
 					}
 
 				else if ((strcmp(code_type, "lrc")==0) && (chunk_id_stripe<erasure_k+num_lg)){
 
 					// calculate the local parity 
-					local_prty_id=chunk_id_stripe-erasure_k+1;
+					local_prty_id=chunk_id_stripe-erasure_k;
 
+					//printf("local_prty_id=%d\n", local_prty_id);
+
+					// assign the addr to a variable
+					lp_addr=(char*)(aio_list[io_id].aio_buf);
+
+					//printf("lp_addr=%p\n", lp_addr);
+					//printf("num_data_chunk_lg=%d, index=%d\n", num_data_chunk_lg, j);
+					
+                    //printf("updt_mrk_stripe:\n");
+					//print_matrix(updt_mrk_stripe, updt_chnk_cnt, 1);
+					
                     // identify the updated data chunks in the local group
 					for(k=0; k<updt_chnk_cnt; k++){
 
-						if(chunk_index[k]/num_data_chunk_lg==local_prty_id){
+						if(updt_mrk_stripe[k]/num_data_chunk_lg==local_prty_id){
 
-							cal_delta(new_parity, data_delta[k], (char*)aio_list[j].aio_buf, block_size);
-							memcpy(aio_list[j].aio_buf, new_parity, sizeof(char)*block_size);
+							//printf("k=%d, num_data_chunk_lg=%d, updt_mrk_stripe[k]=%d, index=%d\n", k, num_data_chunk_lg, updt_mrk_stripe[k], j);
+
+							cal_delta(new_parity, data_delta[k], lp_addr, block_size);
+
+							//printf("before: mid=%p, lp_addr=%p, new_parity=%p\n", mid, lp_addr, new_parity);
+
+							mid=new_parity;
+							new_parity=lp_addr;
+							lp_addr=mid;
+
+							//printf("after: mid=%p, lp_addr=%p, new_parity=%p\n", mid, lp_addr, new_parity);
 
 							}
 						}
+
+					// memcpy the new parity 
+					if((char*)(aio_list[io_id].aio_buf)!=mid)
+						memcpy((char*)aio_list[io_id].aio_buf, mid, sizeof(char)*block_size);
+
+					//printf("(char*)aio_list[j].aio_buf=%p\n", (char*)aio_list[j].aio_buf);
+					
 					}
 				}
 			}	
@@ -2069,8 +2108,10 @@ void system_partial_stripe_writes(int *io_matrix, int *accessed_stripes, int str
     for(i=0; i<num_disk_stripe; i++)
 		close(fd_disk[i]);
 
+	for(i=0; i<io_index; i++)
+		free((char*)aio_list[io_id].aio_buf);
+
     free(aio_list);
-	free(chunk_index);
 	free(updt_chunk_stripe);
 	free(new_data);
 	free(final_coding_delta);
@@ -2085,6 +2126,8 @@ void system_partial_stripe_writes(int *io_matrix, int *accessed_stripes, int str
 
 	free(data_delta);
 	free(coding_delta);
+	free(rs_encoding_matrix);
+	free(updt_chnk_io_map);
 
 }
 
@@ -2115,8 +2158,12 @@ void get_chnk_info(int chunk_id, CHUNK_INFO* chunk_info){
 	crrltd_chnk_idx=sort_ognzd_crrltd_chnk_index[temp_index];
 
 	chunk_info->stripe_id=crrltd_chnk_idx/erasure_k;
-	chunk_info->chunk_id_in_stripe=crrltd_chnk_idx%erasure_k;
 	chunk_info->lg_id=ognzd_crrltd_chnk_lg[crrltd_chnk_idx];
+
+	if(strcmp(code_type, "rs")==0)
+		chunk_info->chunk_id_in_stripe=crrltd_chnk_idx%erasure_k;	
+	else
+		chunk_info->chunk_id_in_stripe=ognzd_crrltd_chnk_id_stripe[crrltd_chnk_idx];
 	
    	}
 
@@ -2127,7 +2174,7 @@ void get_chnk_info(int chunk_id, CHUNK_INFO* chunk_info){
 	chunk_info->lg_id=chunk_info->chunk_id_in_stripe/num_chunk_per_lg;
 	
    	}
-
+   
 #if debug
    if(si->search_flag==1)
    	printf("Correlated chunk:\n");
@@ -2317,6 +2364,7 @@ int psw_time_caso(char *trace_name, char given_timestamp[], double *time){
 			}
 
 			//printf("chunk_info->stripe_id=%d, stripe_count=%d\n", chunk_info->stripe_id, stripe_count);
+			//printf("rotation=%d\n", rotation);
 
 			//check the local group
 			if(strcmp(code_type, "lrc")==0){
@@ -2339,12 +2387,11 @@ int psw_time_caso(char *trace_name, char given_timestamp[], double *time){
 				io_request[j*num_disk_stripe+(k+rotation)%num_disk_stripe]=1;
 
 			// if it is lrc, then mark the local parity chunks
-			if(strcmp(code_type, "lrc")==0){
+			if(strcmp(code_type, "lrc")==0)
+				io_request[j*num_disk_stripe+(erasure_k+lg_id+rotation)%num_disk_stripe]=1;
 
-				for(k=erasure_k+lg_id*lg_prty_num; k<(erasure_k+(lg_id+1)*lg_prty_num); k++)
-					io_request[j*num_disk_stripe+(k+rotation)%num_disk_stripe]=1;
+		//printf("stripe_id=%d, lg_id=%d\n", chunk_info->stripe_id, chunk_info->lg_id);
 
-				}
 		}
 	}
 
@@ -2440,6 +2487,8 @@ int psw_time_striping(char *trace_name, char given_timestamp[], double *time){
 	int *io_request=(int*)malloc(sizeof(int)*max_accessed_stripes*num_disk_stripe); // it records the io request in a timestamp
 	int* lg_per_tmstmp=(int*)malloc(sizeof(int)*max_accessed_stripes*num_lg); 
 
+	memset(io_request, 0, sizeof(int)*max_accessed_stripes*num_disk_stripe);
+
 	int write_count;
 	int lg_count=0, lg_id;
 	int num_chnk_per_lg; 
@@ -2500,10 +2549,6 @@ int psw_time_striping(char *trace_name, char given_timestamp[], double *time){
 			system_partial_stripe_writes(io_request, stripes_per_timestamp, stripe_count, total_write_block_num);
 			gettimeofday(&end_time, NULL);
 			*time+=end_time.tv_sec-begin_time.tv_sec+(end_time.tv_usec-begin_time.tv_usec)*1.0/1000000;
-
-			//printf("the io_matrix of write_count-%d, io_count=%d\n", write_count, io_count);
-			//print_matrix(io_request, num_disk_stripe, stripe_count);
-			//printf("\n");
 
 			// re-initiate the stripes_per_timestamp
 			memset(io_request, 0, sizeof(int)*max_accessed_stripes*num_disk_stripe);
