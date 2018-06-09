@@ -54,3 +54,71 @@ bso_io=84576, bso_time=368.44
 caso_io=119301, caso_time=322.97
 bso_io=135713, bso_time=398.39
 
+
+
+
+
+
++++++++ trace=msr-traces/wdev_1.csv, RS(6,3) ========
+caso_io=1422, caso_time=3.36
+bso_io=1548, bso_time=3.37
+
++++++++ trace=msr-traces/wdev_1.csv, LRC(6,2,3) ========
+caso_io=1935, caso_time=3.38
+bso_io=2097, bso_time=3.56
+
++++++++ trace=msr-traces/wdev_3.csv, RS(6,3) ========
+caso_io=786, caso_time=2.18
+bso_io=759, bso_time=2.12
+
++++++++ trace=msr-traces/wdev_3.csv, LRC(6,2,3) ========
+caso_io=1144, caso_time=2.34
+bso_io=1158, bso_time=2.20
+
++++++++ trace=msr-traces/wdev_2.csv, RS(6,3) ========
+caso_io=204321, caso_time=397.71
+bso_io=268515, bso_time=604.89
+
++++++++ trace=msr-traces/wdev_2.csv, LRC(6,2,3) ========
+caso_io=299671, caso_time=427.38
+bso_io=384351, bso_time=669.14
+
++++++++ trace=msr-traces/rsrch_1.csv, RS(6,3) ========
+caso_io=19428, caso_time=56.14
+bso_io=23490, bso_time=56.15
+
++++++++ trace=msr-traces/rsrch_1.csv, LRC(6,2,3) ========
+caso_io=28909, caso_time=54.28
+bso_io=34340, bso_time=58.01
+
++++++++ trace=msr-traces/src2_1.csv, RS(6,3) ========
+caso_io=22530, caso_time=56.22
+bso_io=25860, bso_time=62.34
+
++++++++ trace=msr-traces/src2_1.csv, LRC(6,2,3) ========
+caso_io=33638, caso_time=61.50
+bso_io=37692, bso_time=67.82
+
++++++++ trace=msr-traces/hm_1.csv, RS(6,3) ========
+caso_io=54018, caso_time=121.31
+bso_io=58710, bso_time=137.15
+
++++++++ trace=msr-traces/hm_1.csv, LRC(6,2,3) ========
+caso_io=81611, caso_time=124.02
+bso_io=85598, bso_time=140.51
+
++++++++ trace=msr-traces/rsrch_2.csv, RS(6,3) ========
+caso_io=92568, caso_time=284.12
+bso_io=97329, bso_time=339.40
+
++++++++ trace=msr-traces/rsrch_2.csv, LRC(6,2,3) ========
+caso_io=133336, caso_time=298.27
+bso_io=140190, bso_time=360.68
+
++++++++ trace=msr-traces/wdev_0.csv, RS(6,3) ========
+caso_io=957870, caso_time=2086.31
+bso_io=1204059, bso_time=2662.17
+
++++++++ trace=msr-traces/wdev_0.csv, LRC(6,2,3) ========
+caso_io=1394437, caso_time=2235.94
+bso_io=1707859, bso_time=2854.85
