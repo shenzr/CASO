@@ -122,3 +122,74 @@ bso_io=1204059, bso_time=2662.17
 +++++++ trace=msr-traces/wdev_0.csv, LRC(6,2,3) ========
 caso_io=1394437, caso_time=2235.94
 bso_io=1707859, bso_time=2854.85
+
+
+
+
+
+
+
+
++++++++ trace=msr-traces/wdev_1.csv, RS(8,4) ========
+caso_io=1580, caso_time=3.42
+bso_io=1412, bso_time=2.99
+
++++++++ trace=msr-traces/wdev_1.csv, LRC(8,2,4) ========
+caso_io=2000, caso_time=3.51
+bso_io=1936, bso_time=4.57
+
++++++++ trace=msr-traces/wdev_3.csv, RS(8,4) ========
+caso_io=952, caso_time=2.15
+bso_io=1356, bso_time=2.38
+
++++++++ trace=msr-traces/wdev_3.csv, LRC(8,2,4) ========
+caso_io=1270, caso_time=2.20
+bso_io=1709, bso_time=2.47
+
++++++++ trace=msr-traces/wdev_2.csv, RS(8,4) ========
+caso_io=244460, caso_time=379.13
+bso_io=313156, bso_time=546.24
+
++++++++ trace=msr-traces/wdev_2.csv, LRC(8,2,4) ========
+caso_io=326014, caso_time=396.97
+bso_io=416231, bso_time=739.17
+
++++++++ trace=msr-traces/rsrch_1.csv, RS(8,4) ========
+caso_io=22560, caso_time=50.81
+bso_io=26092, bso_time=52.78
+
++++++++ trace=msr-traces/rsrch_1.csv, LRC(8,2,4) ========
+caso_io=30398, caso_time=48.86
+bso_io=35488, bso_time=51.42
+
++++++++ trace=msr-traces/src2_1.csv, RS(8,4) ========
+caso_io=25888, caso_time=50.02
+bso_io=28452, bso_time=55.43
+
++++++++ trace=msr-traces/src2_1.csv, LRC(8,2,4) ========
+caso_io=34870, caso_time=53.82
+bso_io=38712, bso_time=58.88
+
++++++++ trace=msr-traces/hm_1.csv, RS(8,4) ========
+caso_io=60672, caso_time=105.33
+bso_io=69084, bso_time=125.65
+
++++++++ trace=msr-traces/hm_1.csv, LRC(8,2,4) ========
+caso_io=81513, caso_time=105.02
+bso_io=92132, bso_time=126.14
+
++++++++ trace=msr-traces/rsrch_2.csv, RS(8,4) ========
+caso_io=120888, caso_time=286.10
+bso_io=158356, bso_time=365.14
+
++++++++ trace=msr-traces/rsrch_2.csv, LRC(8,2,4) ========
+caso_io=156434, caso_time=299.59
+bso_io=200641, bso_time=383.73
+
++++++++ trace=msr-traces/wdev_0.csv, RS(8,4) ========
+caso_io=1171388, caso_time=1897.83
+bso_io=1431584, bso_time=2474.48
+
++++++++ trace=msr-traces/wdev_0.csv, LRC(8,2,4) ========
+caso_io=1550582, caso_time=2050.17
+bso_io=1869446, bso_time=2602.90
