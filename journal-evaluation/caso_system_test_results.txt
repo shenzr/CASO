@@ -1,6 +1,7 @@
 +++++++ trace=msr-traces/wdev_1.csv, RS(4,2) ========
-caso_io=756, caso_time=3.33
-bso_io=1048, bso_time=3.46
+caso_io=756, caso_time=3.29
+bso_io=1048, bso_time=3.43
+
 
 +++++++ trace=msr-traces/wdev_1.csv, LRC(4,2,2) ========
 caso_io=1235, caso_time=3.53
@@ -53,6 +54,268 @@ bso_io=84576, bso_time=368.44
 +++++++ trace=msr-traces/rsrch_2.csv, LRC(4,2,2) ========
 caso_io=119301, caso_time=322.97
 bso_io=135713, bso_time=398.39
+
+
+round-1
+
++++++++ trace=msr-traces/wdev_1.csv, RS(4,2) ========
+caso_io=756, caso_time=3.30
+bso_io=1048, bso_time=3.43
+
++++++++ trace=msr-traces/wdev_1.csv, LRC(4,2,2) ========
+caso_io=1235, caso_time=3.85
+bso_io=1605, bso_time=3.74
+
++++++++ trace=msr-traces/wdev_3.csv, RS(4,2) ========
+caso_io=640, caso_time=2.64
+bso_io=710, bso_time=2.66
+
++++++++ trace=msr-traces/wdev_3.csv, LRC(4,2,2) ========
+caso_io=1099, caso_time=2.61
+bso_io=1172, bso_time=2.74
+
++++++++ trace=msr-traces/wdev_2.csv, RS(4,2) ========
+caso_io=161288, caso_time=473.49
+bso_io=206162, bso_time=625.92
+
++++++++ trace=msr-traces/wdev_2.csv, LRC(4,2,2) ========
+caso_io=279365, caso_time=493.70
+bso_io=344390, bso_time=792.40
+
++++++++ trace=msr-traces/rsrch_1.csv, RS(4,2) ========
+caso_io=15682, caso_time=70.54
+bso_io=18794, bso_time=66.16
+
++++++++ trace=msr-traces/rsrch_1.csv, LRC(4,2,2) ========
+caso_io=27871, caso_time=68.62
+bso_io=32165, bso_time=67.97
+
++++++++ trace=msr-traces/src2_1.csv, RS(4,2) ========
+caso_io=18634, caso_time=68.75
+bso_io=20522, bso_time=74.74
+
++++++++ trace=msr-traces/src2_1.csv, LRC(4,2,2) ========
+caso_io=32747, caso_time=74.39
+bso_io=35375, bso_time=77.27
+
++++++++ trace=msr-traces/hm_1.csv, RS(4,2) ========
+caso_io=44456, caso_time=149.75
+bso_io=46100, bso_time=166.39
+
++++++++ trace=msr-traces/hm_1.csv, LRC(4,2,2) ========
+caso_io=75768, caso_time=152.20
+bso_io=83351, bso_time=234.06
+
++++++++ trace=msr-traces/rsrch_2.csv, RS(4,2) ========
+caso_io=71154, caso_time=303.29
+bso_io=84576, bso_time=366.45
+
++++++++ trace=msr-traces/rsrch_2.csv, LRC(4,2,2) ========
+caso_io=119301, caso_time=322.37
+bso_io=135715, bso_time=396.67
+
++++++++ trace=msr-traces/wdev_0.csv, RS(4,2) ========
+caso_io=757444, caso_time=2382.86
+bso_io=875730, bso_time=2962.71
+
++++++++ trace=msr-traces/wdev_0.csv, LRC(4,2,2) ========
+caso_io=1291422, caso_time=2622.38
+bso_io=1458820, bso_time=3263.14
+¡°round-2¡±
+
++++++++ trace=msr-traces/wdev_1.csv, RS(4,2) ========
+caso_io=756, caso_time=3.36
+bso_io=1048, bso_time=3.43
+
++++++++ trace=msr-traces/wdev_1.csv, LRC(4,2,2) ========
+caso_io=1235, caso_time=3.68
+bso_io=1605, bso_time=3.62
+
++++++++ trace=msr-traces/wdev_3.csv, RS(4,2) ========
+caso_io=640, caso_time=2.49
+bso_io=710, bso_time=2.56
+
++++++++ trace=msr-traces/wdev_3.csv, LRC(4,2,2) ========
+caso_io=1099, caso_time=2.55
+bso_io=1172, bso_time=2.67
+
++++++++ trace=msr-traces/wdev_2.csv, RS(4,2) ========
+caso_io=161288, caso_time=478.58
+bso_io=206162, bso_time=625.42
+
++++++++ trace=msr-traces/wdev_2.csv, LRC(4,2,2) ========
+caso_io=279365, caso_time=494.58
+bso_io=344387, bso_time=731.28
+
++++++++ trace=msr-traces/rsrch_1.csv, RS(4,2) ========
+caso_io=15682, caso_time=70.28
+bso_io=18794, bso_time=66.49
+
++++++++ trace=msr-traces/rsrch_1.csv, LRC(4,2,2) ========
+caso_io=27871, caso_time=69.57
+bso_io=32165, bso_time=72.30
+
++++++++ trace=msr-traces/src2_1.csv, RS(4,2) ========
+caso_io=18634, caso_time=68.47
+bso_io=20522, bso_time=74.67
+
++++++++ trace=msr-traces/src2_1.csv, LRC(4,2,2) ========
+caso_io=32747, caso_time=73.46
+bso_io=35375, bso_time=77.62
+
++++++++ trace=msr-traces/hm_1.csv, RS(4,2) ========
+caso_io=44456, caso_time=150.03
+bso_io=46100, bso_time=165.65
+
++++++++ trace=msr-traces/hm_1.csv, LRC(4,2,2) ========
+caso_io=75768, caso_time=152.92
+bso_io=83351, bso_time=173.78
+
++++++++ trace=msr-traces/rsrch_2.csv, RS(4,2) ========
+caso_io=71154, caso_time=300.62
+bso_io=84576, bso_time=367.18
+
++++++++ trace=msr-traces/rsrch_2.csv, LRC(4,2,2) ========
+caso_io=119301, caso_time=322.32
+bso_io=135715, bso_time=395.83
+
++++++++ trace=msr-traces/wdev_0.csv, RS(4,2) ========
+caso_io=757444, caso_time=2388.18
+bso_io=875730, bso_time=2965.14
+
++++++++ trace=msr-traces/wdev_0.csv, LRC(4,2,2) ========
+caso_io=1291422, caso_time=2682.74
+bso_io=1458820, bso_time=3261.03
+round-3
+
++++++++ trace=msr-traces/wdev_1.csv, RS(4,2) ========
+caso_io=756, caso_time=3.49
+bso_io=1048, bso_time=3.38
+
++++++++ trace=msr-traces/wdev_1.csv, LRC(4,2,2) ========
+caso_io=1235, caso_time=3.66
+bso_io=1605, bso_time=3.77
+
++++++++ trace=msr-traces/wdev_3.csv, RS(4,2) ========
+caso_io=640, caso_time=2.49
+bso_io=710, bso_time=2.59
+
++++++++ trace=msr-traces/wdev_3.csv, LRC(4,2,2) ========
+caso_io=1099, caso_time=2.57
+bso_io=1172, bso_time=2.67
+
++++++++ trace=msr-traces/wdev_2.csv, RS(4,2) ========
+caso_io=161288, caso_time=473.08
+bso_io=206162, bso_time=625.53
+
++++++++ trace=msr-traces/wdev_2.csv, LRC(4,2,2) ========
+caso_io=279365, caso_time=495.23
+bso_io=344384, bso_time=730.81
+
++++++++ trace=msr-traces/rsrch_1.csv, RS(4,2) ========
+caso_io=15682, caso_time=71.98
+bso_io=18794, bso_time=65.80
+
++++++++ trace=msr-traces/rsrch_1.csv, LRC(4,2,2) ========
+caso_io=27871, caso_time=69.74
+bso_io=32165, bso_time=68.26
+
++++++++ trace=msr-traces/src2_1.csv, RS(4,2) ========
+caso_io=18634, caso_time=67.84
+bso_io=20522, bso_time=74.88
+
++++++++ trace=msr-traces/src2_1.csv, LRC(4,2,2) ========
+caso_io=32747, caso_time=73.04
+bso_io=35375, bso_time=78.52
+
++++++++ trace=msr-traces/hm_1.csv, RS(4,2) ========
+caso_io=44456, caso_time=150.51
+bso_io=46100, bso_time=166.09
+
++++++++ trace=msr-traces/hm_1.csv, LRC(4,2,2) ========
+caso_io=75768, caso_time=152.50
+bso_io=83351, bso_time=174.46
+
++++++++ trace=msr-traces/rsrch_2.csv, RS(4,2) ========
+caso_io=71154, caso_time=302.19
+bso_io=84576, bso_time=367.36
+
++++++++ trace=msr-traces/rsrch_2.csv, LRC(4,2,2) ========
+caso_io=119301, caso_time=322.24
+bso_io=135715, bso_time=396.44
+
++++++++ trace=msr-traces/wdev_0.csv, RS(4,2) ========
+caso_io=757444, caso_time=2385.00
+bso_io=875730, bso_time=2965.58
+
++++++++ trace=msr-traces/wdev_0.csv, LRC(4,2,2) ========
+caso_io=1291422, caso_time=2626.14
+bso_io=1458820, bso_time=3267.27
+round-4
+
++++++++ trace=msr-traces/wdev_1.csv, RS(4,2) ========
+caso_io=756, caso_time=3.63
+bso_io=1048, bso_time=3.45
+
++++++++ trace=msr-traces/wdev_1.csv, LRC(4,2,2) ========
+caso_io=1235, caso_time=3.88
+bso_io=1605, bso_time=3.55
+
++++++++ trace=msr-traces/wdev_3.csv, RS(4,2) ========
+caso_io=640, caso_time=2.40
+bso_io=710, bso_time=2.60
+
++++++++ trace=msr-traces/wdev_3.csv, LRC(4,2,2) ========
+caso_io=1099, caso_time=2.61
+bso_io=1172, bso_time=2.66
+
++++++++ trace=msr-traces/wdev_2.csv, RS(4,2) ========
+caso_io=161288, caso_time=478.39
+bso_io=206162, bso_time=625.69
+
++++++++ trace=msr-traces/wdev_2.csv, LRC(4,2,2) ========
+caso_io=279365, caso_time=495.20
+bso_io=344387, bso_time=732.58
+
++++++++ trace=msr-traces/rsrch_1.csv, RS(4,2) ========
+caso_io=15682, caso_time=70.61
+bso_io=18794, bso_time=66.25
+
++++++++ trace=msr-traces/rsrch_1.csv, LRC(4,2,2) ========
+caso_io=27871, caso_time=69.41
+bso_io=32165, bso_time=68.70
+
++++++++ trace=msr-traces/src2_1.csv, RS(4,2) ========
+caso_io=18634, caso_time=68.69
+bso_io=20522, bso_time=74.69
+
++++++++ trace=msr-traces/src2_1.csv, LRC(4,2,2) ========
+caso_io=32747, caso_time=73.70
+bso_io=35375, bso_time=77.60
+
++++++++ trace=msr-traces/hm_1.csv, RS(4,2) ========
+caso_io=44456, caso_time=149.90
+bso_io=46100, bso_time=167.66
+
++++++++ trace=msr-traces/hm_1.csv, LRC(4,2,2) ========
+caso_io=75768, caso_time=152.79
+bso_io=83351, bso_time=174.16
+
++++++++ trace=msr-traces/rsrch_2.csv, RS(4,2) ========
+caso_io=71154, caso_time=302.81
+bso_io=84576, bso_time=366.92
+
++++++++ trace=msr-traces/rsrch_2.csv, LRC(4,2,2) ========
+caso_io=119301, caso_time=322.70
+bso_io=135715, bso_time=396.96
+
++++++++ trace=msr-traces/wdev_0.csv, RS(4,2) ========
+caso_io=757444, caso_time=2385.77
+bso_io=875730, bso_time=2967.94
+
++++++++ trace=msr-traces/wdev_0.csv, LRC(4,2,2) ========
+caso_io=1291422, caso_time=2621.12
+bso_io=1458820, bso_time=3330.09
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -120,6 +383,271 @@ bso_io=1204059, bso_time=2662.17
 +++++++ trace=msr-traces/wdev_0.csv, LRC(6,2,3) ========
 caso_io=1394437, caso_time=2235.94
 bso_io=1707859, bso_time=2854.85
+
+
+round-1
+
++++++++ trace=msr-traces/wdev_1.csv, RS(6,3) ========
+caso_io=1422, caso_time=3.43
+bso_io=1548, bso_time=3.37
+
++++++++ trace=msr-traces/wdev_1.csv, LRC(6,2,3) ========
+caso_io=1935, caso_time=3.38
+bso_io=2097, bso_time=3.52
+
++++++++ trace=msr-traces/wdev_3.csv, RS(6,3) ========
+caso_io=786, caso_time=2.28
+bso_io=759, bso_time=2.04
+
++++++++ trace=msr-traces/wdev_3.csv, LRC(6,2,3) ========
+caso_io=1144, caso_time=2.30
+bso_io=1158, bso_time=2.16
+
++++++++ trace=msr-traces/wdev_2.csv, RS(6,3) ========
+caso_io=204321, caso_time=409.13
+bso_io=268515, bso_time=606.64
+
++++++++ trace=msr-traces/wdev_2.csv, LRC(6,2,3) ========
+caso_io=299671, caso_time=428.06
+bso_io=384345, bso_time=674.11
+
++++++++ trace=msr-traces/rsrch_1.csv, RS(6,3) ========
+caso_io=19428, caso_time=56.42
+bso_io=23490, bso_time=56.74
+
++++++++ trace=msr-traces/rsrch_1.csv, LRC(6,2,3) ========
+caso_io=28909, caso_time=54.36
+bso_io=34340, bso_time=58.46
+
++++++++ trace=msr-traces/src2_1.csv, RS(6,3) ========
+caso_io=22530, caso_time=57.03
+bso_io=25860, bso_time=63.04
+
++++++++ trace=msr-traces/src2_1.csv, LRC(6,2,3) ========
+caso_io=33638, caso_time=60.58
+bso_io=37692, bso_time=66.24
+
++++++++ trace=msr-traces/hm_1.csv, RS(6,3) ========
+caso_io=54018, caso_time=122.32
+bso_io=58710, bso_time=136.84
+
++++++++ trace=msr-traces/hm_1.csv, LRC(6,2,3) ========
+caso_io=81611, caso_time=122.82
+bso_io=85598, bso_time=140.65
+
++++++++ trace=msr-traces/rsrch_2.csv, RS(6,3) ========
+caso_io=92568, caso_time=286.92
+bso_io=97329, bso_time=337.11
+
++++++++ trace=msr-traces/rsrch_2.csv, LRC(6,2,3) ========
+caso_io=133336, caso_time=301.79
+bso_io=140190, bso_time=359.06
+
++++++++ trace=msr-traces/wdev_0.csv, RS(6,3) ========
+caso_io=957870, caso_time=2087.59
+bso_io=1204059, bso_time=2674.52
+
++++++++ trace=msr-traces/wdev_0.csv, LRC(6,2,3) ========
+caso_io=1394437, caso_time=2264.61
+bso_io=1707859, bso_time=2920.96
+
+¡°round-2¡±
+
++++++++ trace=msr-traces/wdev_1.csv, RS(6,3) ========
+caso_io=1422, caso_time=3.42
+bso_io=1548, bso_time=3.42
+
++++++++ trace=msr-traces/wdev_1.csv, LRC(6,2,3) ========
+caso_io=1935, caso_time=3.59
+bso_io=2097, bso_time=3.54
+
++++++++ trace=msr-traces/wdev_3.csv, RS(6,3) ========
+caso_io=786, caso_time=2.18
+bso_io=759, bso_time=2.12
+
++++++++ trace=msr-traces/wdev_3.csv, LRC(6,2,3) ========
+caso_io=1144, caso_time=2.38
+bso_io=1158, bso_time=2.13
+
++++++++ trace=msr-traces/wdev_2.csv, RS(6,3) ========
+caso_io=204321, caso_time=409.75
+bso_io=268515, bso_time=607.80
+
++++++++ trace=msr-traces/wdev_2.csv, LRC(6,2,3) ========
+caso_io=299671, caso_time=429.52
+bso_io=384347, bso_time=735.45
+
++++++++ trace=msr-traces/rsrch_1.csv, RS(6,3) ========
+caso_io=19428, caso_time=56.34
+bso_io=23490, bso_time=55.59
+
++++++++ trace=msr-traces/rsrch_1.csv, LRC(6,2,3) ========
+caso_io=28909, caso_time=54.96
+bso_io=34340, bso_time=57.78
+
++++++++ trace=msr-traces/src2_1.csv, RS(6,3) ========
+caso_io=22530, caso_time=55.97
+bso_io=25860, bso_time=63.03
+
++++++++ trace=msr-traces/src2_1.csv, LRC(6,2,3) ========
+caso_io=33638, caso_time=60.28
+bso_io=37692, bso_time=68.14
+
++++++++ trace=msr-traces/hm_1.csv, RS(6,3) ========
+caso_io=54018, caso_time=122.92
+bso_io=58710, bso_time=137.66
+
++++++++ trace=msr-traces/hm_1.csv, LRC(6,2,3) ========
+caso_io=81611, caso_time=126.25
+bso_io=85598, bso_time=142.33
+
++++++++ trace=msr-traces/rsrch_2.csv, RS(6,3) ========
+caso_io=92568, caso_time=285.09
+bso_io=97329, bso_time=342.47
+
++++++++ trace=msr-traces/rsrch_2.csv, LRC(6,2,3) ========
+caso_io=133336, caso_time=297.75
+bso_io=140190, bso_time=361.35
+
++++++++ trace=msr-traces/wdev_0.csv, RS(6,3) ========
+caso_io=957870, caso_time=2087.62
+bso_io=1204059, bso_time=2732.54
+
++++++++ trace=msr-traces/wdev_0.csv, LRC(6,2,3) ========
+caso_io=1394437, caso_time=2244.98
+bso_io=1707859, bso_time=2861.05
+
+round-3
+
++++++++ trace=msr-traces/wdev_1.csv, RS(6,3) ========
+caso_io=1422, caso_time=3.41
+bso_io=1548, bso_time=3.40
+
++++++++ trace=msr-traces/wdev_1.csv, LRC(6,2,3) ========
+caso_io=1935, caso_time=3.61
+bso_io=2097, bso_time=3.49
+
++++++++ trace=msr-traces/wdev_3.csv, RS(6,3) ========
+caso_io=786, caso_time=2.23
+bso_io=759, bso_time=2.03
+
++++++++ trace=msr-traces/wdev_3.csv, LRC(6,2,3) ========
+caso_io=1144, caso_time=2.30
+bso_io=1158, bso_time=2.13
+
++++++++ trace=msr-traces/wdev_2.csv, RS(6,3) ========
+caso_io=204321, caso_time=408.73
+bso_io=268515, bso_time=610.08
+
++++++++ trace=msr-traces/wdev_2.csv, LRC(6,2,3) ========
+caso_io=299671, caso_time=431.26
+bso_io=384348, bso_time=675.05
+
++++++++ trace=msr-traces/rsrch_1.csv, RS(6,3) ========
+caso_io=19428, caso_time=57.71
+bso_io=23490, bso_time=55.09
+
++++++++ trace=msr-traces/rsrch_1.csv, LRC(6,2,3) ========
+caso_io=28909, caso_time=56.39
+bso_io=34340, bso_time=57.11
+
++++++++ trace=msr-traces/src2_1.csv, RS(6,3) ========
+caso_io=22530, caso_time=57.69
+bso_io=25860, bso_time=62.80
+
++++++++ trace=msr-traces/src2_1.csv, LRC(6,2,3) ========
+caso_io=33638, caso_time=61.88
+bso_io=37692, bso_time=66.06
+
++++++++ trace=msr-traces/hm_1.csv, RS(6,3) ========
+caso_io=54018, caso_time=123.28
+bso_io=58710, bso_time=138.07
+
++++++++ trace=msr-traces/hm_1.csv, LRC(6,2,3) ========
+caso_io=81611, caso_time=123.62
+bso_io=85598, bso_time=140.72
+
++++++++ trace=msr-traces/rsrch_2.csv, RS(6,3) ========
+caso_io=92568, caso_time=286.77
+bso_io=97329, bso_time=339.36
+
++++++++ trace=msr-traces/rsrch_2.csv, LRC(6,2,3) ========
+caso_io=133336, caso_time=302.51
+bso_io=140193, bso_time=358.85
+
++++++++ trace=msr-traces/wdev_0.csv, RS(6,3) ========
+caso_io=957870, caso_time=2093.03
+bso_io=1204059, bso_time=2741.60
+
++++++++ trace=msr-traces/wdev_0.csv, LRC(6,2,3) ========
+caso_io=1394437, caso_time=2281.19
+bso_io=1707859, bso_time=2923.20
+
+round-4
+
++++++++ trace=msr-traces/wdev_1.csv, RS(6,3) ========
+caso_io=1422, caso_time=3.39
+bso_io=1548, bso_time=3.27
+
++++++++ trace=msr-traces/wdev_1.csv, LRC(6,2,3) ========
+caso_io=1935, caso_time=3.44
+bso_io=2097, bso_time=3.50
+
++++++++ trace=msr-traces/wdev_3.csv, RS(6,3) ========
+caso_io=786, caso_time=2.28
+bso_io=759, bso_time=2.18
+
++++++++ trace=msr-traces/wdev_3.csv, LRC(6,2,3) ========
+caso_io=1144, caso_time=2.32
+bso_io=1158, bso_time=2.25
+
++++++++ trace=msr-traces/wdev_2.csv, RS(6,3) ========
+caso_io=204321, caso_time=411.47
+bso_io=268515, bso_time=610.06
+
++++++++ trace=msr-traces/wdev_2.csv, LRC(6,2,3) ========
+caso_io=299671, caso_time=431.12
+bso_io=384348, bso_time=678.95
+
++++++++ trace=msr-traces/rsrch_1.csv, RS(6,3) ========
+caso_io=19428, caso_time=56.96
+bso_io=23490, bso_time=55.79
+
++++++++ trace=msr-traces/rsrch_1.csv, LRC(6,2,3) ========
+caso_io=28909, caso_time=54.40
+bso_io=34340, bso_time=58.40
+
++++++++ trace=msr-traces/src2_1.csv, RS(6,3) ========
+caso_io=22530, caso_time=56.22
+bso_io=25860, bso_time=63.83
+
++++++++ trace=msr-traces/src2_1.csv, LRC(6,2,3) ========
+caso_io=33638, caso_time=62.44
+bso_io=37692, bso_time=66.82
+
++++++++ trace=msr-traces/hm_1.csv, RS(6,3) ========
+caso_io=54018, caso_time=123.16
+bso_io=58710, bso_time=137.56
+
++++++++ trace=msr-traces/hm_1.csv, LRC(6,2,3) ========
+caso_io=81611, caso_time=123.31
+bso_io=85598, bso_time=141.95
+
++++++++ trace=msr-traces/rsrch_2.csv, RS(6,3) ========
+caso_io=92568, caso_time=288.72
+bso_io=97329, bso_time=341.05
+
++++++++ trace=msr-traces/rsrch_2.csv, LRC(6,2,3) ========
+caso_io=133336, caso_time=302.91
+bso_io=140190, bso_time=359.10
+
++++++++ trace=msr-traces/wdev_0.csv, RS(6,3) ========
+caso_io=957870, caso_time=2095.38
+bso_io=1204059, bso_time=2683.03
+
++++++++ trace=msr-traces/wdev_0.csv, LRC(6,2,3) ========
+caso_io=1394437, caso_time=2255.80
+bso_io=1707859, bso_time=2866.78
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
