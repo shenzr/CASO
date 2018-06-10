@@ -155,9 +155,6 @@ int main(int argc, char *argv[]){
   //dr_time_striping(argv[1], begin_timestamp, striping_num_extra_io, striping_time);
   //dr_time_continugous(argv[1], begin_timestamp, continugous_num_extra_io, continugous_time);
 
-  //printf("caso_dr_extra_io_per_disk_failure=%.2lf, striping_dr_extra_io_per_disk_failure=%.2lf, continugous_dr_extra_io_per_disk_failure=%.2lf\n\n", 
-  		//(*caso_num_extra_io)*1.0/num_disk_stripe, (*striping_num_extra_io)*1.0/num_disk_stripe, (*continugous_num_extra_io)*1.0/num_disk_stripe);
-
 #if debug
   printf("after_sort: ognzd_crrltd_chnk\n");
   print_matrix(sort_ognzd_crrltd_chnk, ognz_crrltd_cnt, 1);

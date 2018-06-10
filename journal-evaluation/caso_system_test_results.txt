@@ -55,9 +55,7 @@ caso_io=119301, caso_time=322.97
 bso_io=135713, bso_time=398.39
 
 
-
-
-
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 +++++++ trace=msr-traces/wdev_1.csv, RS(6,3) ========
 caso_io=1422, caso_time=3.36
@@ -124,11 +122,7 @@ caso_io=1394437, caso_time=2235.94
 bso_io=1707859, bso_time=2854.85
 
 
-
-
-
-
-
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 +++++++ trace=msr-traces/wdev_1.csv, RS(8,4) ========
 caso_io=1580, caso_time=3.42
@@ -193,3 +187,330 @@ bso_io=1431584, bso_time=2474.48
 +++++++ trace=msr-traces/wdev_0.csv, LRC(8,2,4) ========
 caso_io=1550582, caso_time=2050.17
 bso_io=1869446, bso_time=2602.90
+
+
++++++++ trace=msr-traces/wdev_1.csv, RS(8,4) ========
+caso_io=1580, caso_time=3.32
+bso_io=1412, bso_time=3.04
+
++++++++ trace=msr-traces/wdev_1.csv, LRC(8,2,4) ========
+caso_io=2000, caso_time=3.41
+bso_io=1936, bso_time=3.32
+
++++++++ trace=msr-traces/wdev_3.csv, RS(8,4) ========
+caso_io=952, caso_time=2.22
+bso_io=1356, bso_time=2.45
+
++++++++ trace=msr-traces/wdev_3.csv, LRC(8,2,4) ========
+caso_io=1270, caso_time=2.21
+bso_io=1709, bso_time=2.47
+
++++++++ trace=msr-traces/wdev_2.csv, RS(8,4) ========
+caso_io=244460, caso_time=379.26
+bso_io=313156, bso_time=547.31
+
++++++++ trace=msr-traces/wdev_2.csv, LRC(8,2,4) ========
+caso_io=326014, caso_time=400.27
+bso_io=416232, bso_time=773.08
+
++++++++ trace=msr-traces/rsrch_1.csv, RS(8,4) ========
+caso_io=22560, caso_time=50.86
+bso_io=26092, bso_time=51.59
+
++++++++ trace=msr-traces/rsrch_1.csv, LRC(8,2,4) ========
+caso_io=30398, caso_time=48.50
+bso_io=35488, bso_time=50.72
+
++++++++ trace=msr-traces/src2_1.csv, RS(8,4) ========
+caso_io=25888, caso_time=51.22
+bso_io=28452, bso_time=54.47
+
++++++++ trace=msr-traces/src2_1.csv, LRC(8,2,4) ========
+caso_io=34870, caso_time=54.38
+bso_io=38712, bso_time=58.19
+
++++++++ trace=msr-traces/hm_1.csv, RS(8,4) ========
+caso_io=60672, caso_time=105.20
+bso_io=69084, bso_time=124.11
+
++++++++ trace=msr-traces/hm_1.csv, LRC(8,2,4) ========
+caso_io=81513, caso_time=104.72
+bso_io=92132, bso_time=125.96
+
++++++++ trace=msr-traces/rsrch_2.csv, RS(8,4) ========
+caso_io=120888, caso_time=286.01
+bso_io=158356, bso_time=367.26
+
++++++++ trace=msr-traces/rsrch_2.csv, LRC(8,2,4) ========
+caso_io=156434, caso_time=298.51
+bso_io=200641, bso_time=386.55
+
++++++++ trace=msr-traces/wdev_0.csv, RS(8,4) ========
+caso_io=1171388, caso_time=1905.38
+bso_io=1431584, bso_time=2483.25
+
++++++++ trace=msr-traces/wdev_0.csv, LRC(8,2,4) ========
+caso_io=1550582, caso_time=2140.55
+bso_io=1869445, bso_time=2596.30
+
+
+round-1
+
++++++++ trace=msr-traces/wdev_1.csv, RS(8,4) ========
+caso_io=1580, caso_time=3.16
+bso_io=1412, bso_time=2.91
+
++++++++ trace=msr-traces/wdev_1.csv, LRC(8,2,4) ========
+caso_io=2000, caso_time=3.31
+bso_io=1936, bso_time=3.13
+
++++++++ trace=msr-traces/wdev_3.csv, RS(8,4) ========
+caso_io=952, caso_time=2.00
+bso_io=1356, bso_time=2.49
+
++++++++ trace=msr-traces/wdev_3.csv, LRC(8,2,4) ========
+caso_io=1270, caso_time=2.20
+bso_io=1709, bso_time=2.45
+
++++++++ trace=msr-traces/wdev_2.csv, RS(8,4) ========
+caso_io=244460, caso_time=378.29
+bso_io=313156, bso_time=546.11
+
++++++++ trace=msr-traces/wdev_2.csv, LRC(8,2,4) ========
+caso_io=326014, caso_time=398.85
+bso_io=416230, bso_time=742.72
+
++++++++ trace=msr-traces/rsrch_1.csv, RS(8,4) ========
+caso_io=22560, caso_time=51.42
+bso_io=26092, bso_time=49.85
+
++++++++ trace=msr-traces/rsrch_1.csv, LRC(8,2,4) ========
+caso_io=30398, caso_time=49.79
+bso_io=35488, bso_time=50.61
+
++++++++ trace=msr-traces/src2_1.csv, RS(8,4) ========
+caso_io=25888, caso_time=51.47
+bso_io=28452, bso_time=54.14
+
++++++++ trace=msr-traces/src2_1.csv, LRC(8,2,4) ========
+caso_io=34870, caso_time=53.98
+bso_io=38712, bso_time=59.31
+
++++++++ trace=msr-traces/hm_1.csv, RS(8,4) ========
+caso_io=60672, caso_time=105.70
+bso_io=69084, bso_time=123.76
+
++++++++ trace=msr-traces/hm_1.csv, LRC(8,2,4) ========
+caso_io=81513, caso_time=104.93
+bso_io=92132, bso_time=126.16
+
++++++++ trace=msr-traces/rsrch_2.csv, RS(8,4) ========
+caso_io=120888, caso_time=288.29
+bso_io=158356, bso_time=366.67
+
++++++++ trace=msr-traces/rsrch_2.csv, LRC(8,2,4) ========
+caso_io=156434, caso_time=296.86
+bso_io=200641, bso_time=384.34
+
++++++++ trace=msr-traces/wdev_0.csv, RS(8,4) ========
+caso_io=1171388, caso_time=1901.36
+bso_io=1431584, bso_time=2482.12
+
++++++++ trace=msr-traces/wdev_0.csv, LRC(8,2,4) ========
+caso_io=1550582, caso_time=2063.18
+bso_io=1869445, bso_time=2604.99
+
+¡°round-2¡±
+
++++++++ trace=msr-traces/wdev_1.csv, RS(8,4) ========
+caso_io=1580, caso_time=3.91
+bso_io=1412, bso_time=2.96
+
++++++++ trace=msr-traces/wdev_1.csv, LRC(8,2,4) ========
+caso_io=2000, caso_time=3.42
+bso_io=1936, bso_time=3.19
+
++++++++ trace=msr-traces/wdev_3.csv, RS(8,4) ========
+caso_io=952, caso_time=2.15
+bso_io=1356, bso_time=2.55
+
++++++++ trace=msr-traces/wdev_3.csv, LRC(8,2,4) ========
+caso_io=1270, caso_time=2.17
+bso_io=1709, bso_time=2.65
+
++++++++ trace=msr-traces/wdev_2.csv, RS(8,4) ========
+caso_io=244460, caso_time=379.13
+bso_io=313156, bso_time=547.12
+
++++++++ trace=msr-traces/wdev_2.csv, LRC(8,2,4) ========
+caso_io=326014, caso_time=431.50
+bso_io=416231, bso_time=743.70
+
++++++++ trace=msr-traces/rsrch_1.csv, RS(8,4) ========
+caso_io=22560, caso_time=50.88
+bso_io=26092, bso_time=50.59
+
++++++++ trace=msr-traces/rsrch_1.csv, LRC(8,2,4) ========
+caso_io=30398, caso_time=48.77
+bso_io=35488, bso_time=52.76
+
++++++++ trace=msr-traces/src2_1.csv, RS(8,4) ========
+caso_io=25888, caso_time=50.85
+bso_io=28452, bso_time=56.19
+
++++++++ trace=msr-traces/src2_1.csv, LRC(8,2,4) ========
+caso_io=34870, caso_time=53.78
+bso_io=38712, bso_time=59.15
+
++++++++ trace=msr-traces/hm_1.csv, RS(8,4) ========
+caso_io=60672, caso_time=104.61
+bso_io=69084, bso_time=126.94
+
++++++++ trace=msr-traces/hm_1.csv, LRC(8,2,4) ========
+caso_io=81513, caso_time=105.18
+bso_io=92132, bso_time=125.11
+
++++++++ trace=msr-traces/rsrch_2.csv, RS(8,4) ========
+caso_io=120888, caso_time=288.30
+bso_io=158356, bso_time=366.79
+
++++++++ trace=msr-traces/rsrch_2.csv, LRC(8,2,4) ========
+caso_io=156434, caso_time=300.02
+bso_io=200641, bso_time=445.78
+
++++++++ trace=msr-traces/wdev_0.csv, RS(8,4) ========
+caso_io=1171388, caso_time=1939.82
+bso_io=1431584, bso_time=2487.96
+
++++++++ trace=msr-traces/wdev_0.csv, LRC(8,2,4) ========
+caso_io=1550582, caso_time=2052.57
+bso_io=1869445, bso_time=2612.84
+
+round-3
+
++++++++ trace=msr-traces/wdev_1.csv, RS(8,4) ========
+caso_io=1580, caso_time=3.51
+bso_io=1412, bso_time=3.06
+
++++++++ trace=msr-traces/wdev_1.csv, LRC(8,2,4) ========
+caso_io=2000, caso_time=3.38
+bso_io=1936, bso_time=3.16
+
++++++++ trace=msr-traces/wdev_3.csv, RS(8,4) ========
+caso_io=952, caso_time=2.12
+bso_io=1356, bso_time=2.59
+
++++++++ trace=msr-traces/wdev_3.csv, LRC(8,2,4) ========
+caso_io=1270, caso_time=2.21
+bso_io=1709, bso_time=2.43
+
++++++++ trace=msr-traces/wdev_2.csv, RS(8,4) ========
+caso_io=244460, caso_time=411.90
+bso_io=313156, bso_time=545.40
+
++++++++ trace=msr-traces/wdev_2.csv, LRC(8,2,4) ========
+caso_io=326014, caso_time=399.64
+bso_io=416230, bso_time=745.25
+
++++++++ trace=msr-traces/rsrch_1.csv, RS(8,4) ========
+caso_io=22560, caso_time=51.38
+bso_io=26092, bso_time=51.34
+
++++++++ trace=msr-traces/rsrch_1.csv, LRC(8,2,4) ========
+caso_io=30398, caso_time=48.51
+bso_io=35488, bso_time=52.60
+
++++++++ trace=msr-traces/src2_1.csv, RS(8,4) ========
+caso_io=25888, caso_time=50.22
+bso_io=28452, bso_time=54.28
+
++++++++ trace=msr-traces/src2_1.csv, LRC(8,2,4) ========
+caso_io=34870, caso_time=55.02
+bso_io=38712, bso_time=58.34
+
++++++++ trace=msr-traces/hm_1.csv, RS(8,4) ========
+caso_io=60672, caso_time=104.68
+bso_io=69084, bso_time=125.62
+
++++++++ trace=msr-traces/hm_1.csv, LRC(8,2,4) ========
+caso_io=81513, caso_time=105.47
+bso_io=92132, bso_time=127.08
+
++++++++ trace=msr-traces/rsrch_2.csv, RS(8,4) ========
+caso_io=120888, caso_time=287.03
+bso_io=158356, bso_time=368.22
+
++++++++ trace=msr-traces/rsrch_2.csv, LRC(8,2,4) ========
+caso_io=156434, caso_time=301.28
+bso_io=200641, bso_time=384.01
+
++++++++ trace=msr-traces/wdev_0.csv, RS(8,4) ========
+caso_io=1171388, caso_time=1909.18
+bso_io=1431584, bso_time=2481.71
+
++++++++ trace=msr-traces/wdev_0.csv, LRC(8,2,4) ========
+caso_io=1550582, caso_time=2040.51
+bso_io=1869445, bso_time=2598.65
+
+round-4
+
++++++++ trace=msr-traces/wdev_1.csv, RS(8,4) ========
+caso_io=1580, caso_time=3.29
+bso_io=1412, bso_time=2.88
+
++++++++ trace=msr-traces/wdev_1.csv, LRC(8,2,4) ========
+caso_io=2000, caso_time=3.47
+bso_io=1936, bso_time=3.19
+
++++++++ trace=msr-traces/wdev_3.csv, RS(8,4) ========
+caso_io=952, caso_time=2.13
+bso_io=1356, bso_time=2.52
+
++++++++ trace=msr-traces/wdev_3.csv, LRC(8,2,4) ========
+caso_io=1270, caso_time=2.12
+bso_io=1709, bso_time=2.48
+
++++++++ trace=msr-traces/wdev_2.csv, RS(8,4) ========
+caso_io=244460, caso_time=378.62
+bso_io=313156, bso_time=546.18
+
++++++++ trace=msr-traces/wdev_2.csv, LRC(8,2,4) ========
+caso_io=326014, caso_time=398.11
+bso_io=416230, bso_time=743.44
+
++++++++ trace=msr-traces/rsrch_1.csv, RS(8,4) ========
+caso_io=22560, caso_time=51.55
+bso_io=26092, bso_time=50.52
+
++++++++ trace=msr-traces/rsrch_1.csv, LRC(8,2,4) ========
+caso_io=30398, caso_time=48.78
+bso_io=35488, bso_time=52.19
+
++++++++ trace=msr-traces/src2_1.csv, RS(8,4) ========
+caso_io=25888, caso_time=50.18
+bso_io=28452, bso_time=55.89
+
++++++++ trace=msr-traces/src2_1.csv, LRC(8,2,4) ========
+caso_io=34870, caso_time=54.05
+bso_io=38712, bso_time=59.96
+
++++++++ trace=msr-traces/hm_1.csv, RS(8,4) ========
+caso_io=60672, caso_time=103.55
+bso_io=69084, bso_time=123.89
+
++++++++ trace=msr-traces/hm_1.csv, LRC(8,2,4) ========
+caso_io=81513, caso_time=104.92
+bso_io=92132, bso_time=127.42
+
++++++++ trace=msr-traces/rsrch_2.csv, RS(8,4) ========
+caso_io=120888, caso_time=285.40
+bso_io=158356, bso_time=368.07
+
++++++++ trace=msr-traces/rsrch_2.csv, LRC(8,2,4) ========
+caso_io=156434, caso_time=298.07
+bso_io=200641, bso_time=382.59
+
++++++++ trace=msr-traces/wdev_0.csv, RS(8,4) ========
+caso_io=1171388, caso_time=1901.65
+bso_io=1431584, bso_time=2512.25
+
