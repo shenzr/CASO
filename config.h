@@ -22,6 +22,9 @@
 #define clean_cache_read_block_num 100 // it defines the number of blocks read for cleaning cache in the main memory
 #define debug 0
 
+double aver_read_size;
+double crlltn_hit_ratio;
+
 int access_bucket[max_aces_blk_num]; // it records the accessed chunks 
 int order_access_bucket[max_aces_blk_num];  // it records the access frequency of each chunk 
 
