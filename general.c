@@ -1088,13 +1088,6 @@ void updt_stripe_chnk_crrltn_dgr(int *stripe_map, int cur_chunk_num, int *temp_s
 
 void lrc_local_group_orgnzt(int* stripe_chnk_crrltn_dgr, int* stripe_chnk_idx_in_crrltn_set, int* crrltd_chnk_pttn_idx, int stripe_id){
 
-	if((num_lg==0) || (erasure_k%num_lg!=0)){
-
-		printf("ERR: LRC config\n");
-		exit(1);
-
-	}
-
 	int i;
 	int j,k;
 	int fir_idx, sec_idx;
@@ -1114,11 +1107,6 @@ void lrc_local_group_orgnzt(int* stripe_chnk_crrltn_dgr, int* stripe_chnk_idx_in
 	int* if_select=(int*)malloc(sizeof(int)*erasure_k);
 	int* slct_lg_chnk_idx=(int*)malloc(sizeof(int)*num_chunk_per_lg);
 	
-#if debug
-	printf("stripe-%d: stripe_chnk_crrltn_dgr:\n", stripe_id);
-	print_matrix(stripe_chnk_crrltn_dgr, erasure_k+1, erasure_k);
-#endif
-
 	memset(if_select, 0, sizeof(int)*erasure_k);
 
 	for(i=0; i<num_lg; i++){
@@ -1189,9 +1177,7 @@ void lrc_local_group_orgnzt(int* stripe_chnk_crrltn_dgr, int* stripe_chnk_idx_in
 					chose_chnk_idx=chunk_id;
 
 				}
-
 			}
-
 
 			// update the slct_lg_chnk_idx
 			if_select[chose_chnk_idx]=1;
@@ -1211,6 +1197,17 @@ void lrc_local_group_orgnzt(int* stripe_chnk_crrltn_dgr, int* stripe_chnk_idx_in
 			ognzd_crrltd_chnk_id_stripe[stripe_id*erasure_k+stripe_chunk_idx]=i*num_chunk_per_lg+j;
 
 		}
+
+#if debug
+		printf("%d-th local group:\n", i);
+
+	    printf("ognzd_crrltd_chnk_id_stripe:\n");
+	    for(j=0; j<num_chunk_per_lg; j++){
+			stripe_chunk_idx=slct_lg_chnk_idx[j];
+		    printf("%d ", stripe_chnk_crrltn_dgr[stripe_chunk_idx*(erasure_k+1)]);
+	    	}
+	    printf("\n");
+#endif
 
 	}
 
@@ -1434,15 +1431,17 @@ void stripe_orgnzt(int* caso_crltd_mtrx, int* caso_crltd_dgr_mtrix, int num_corr
 		printf("correlation degree:\n");
 		print_matrix(stripe_chnk_crrltn_dgr, (erasure_k+1), erasure_k);		
 #endif
+
 		//if it is LRC, then we have to organize the chunks of a stripe into local groups
 		if(strcmp(code_type, "lrc")==0) 
 			lrc_local_group_orgnzt(stripe_chnk_crrltn_dgr, stripe_chnk_idx_in_crrltn_set, crrltd_chnk_pttn_idx, stripe_count);
 
 	}
 
-	//printf("correlated stripes are completely organized!\n");
-	//printf("ognz_crrltd_cnt=%d\n",ognz_crrltd_cnt);
 #if debug
+	printf("correlated stripes are completely organized!\n");
+	printf("ognz_crrltd_cnt=%d\n",ognz_crrltd_cnt);
+
 	printf("before_sort: ognzd_crrltd_chnk\n");
 	print_matrix(sort_ognzd_crrltd_chnk, ognz_crrltd_cnt, 1);
 #endif
@@ -1457,15 +1456,20 @@ void stripe_orgnzt(int* caso_crltd_mtrx, int* caso_crltd_dgr_mtrix, int num_corr
 	QuickSort_index(sort_ognzd_crrltd_chnk, sort_ognzd_crrltd_chnk_index, 0, ognz_crrltd_cnt-1);
 
 #if debug
-	printf("after_sort: sort_ognzd_crrltd_chnk\n");
+	printf("sort_ognzd_crrltd_chnk\n");
 	print_matrix(sort_ognzd_crrltd_chnk, ognz_crrltd_cnt, 1);
 
-	printf("after_sort: sort_ognzd_crrltd_chnk_index\n");
+	printf("sort_ognzd_crrltd_chnk_index\n");
 	print_matrix(sort_ognzd_crrltd_chnk_index, ognz_crrltd_cnt, 1);
 
-	printf("after_sort: ognzd_crrltd_chnk_lg\n");
+	printf("ognzd_crrltd_chnk_lg\n");
 	for(i=0; i<ognz_crrltd_cnt; i++)
 		printf("%d ",ognzd_crrltd_chnk_lg[i]);
+	printf("\n");
+
+	printf("ognzd_crrltd_chnk_id_stripe\n");
+	for(i=0; i<ognz_crrltd_cnt; i++)
+		printf("%d ",ognzd_crrltd_chnk_id_stripe[i]);
 	printf("\n");
 #endif
 
@@ -1703,9 +1707,6 @@ void caso_stripe_ognztn(char *trace_name,  int *analyze_chunks_time_slots, int *
 	int* caso_crltd_mtrx=(int*)malloc(sizeof(int)*num_correlated_chunk*max_num_relevent_chunks_per_chunk);
 	int* caso_crltd_dgr_mtrix=(int*)malloc(sizeof(int)*num_correlated_chunk*max_num_relevent_chunks_per_chunk);
 	int* crrltd_chnk_pttn_idx=(int*)malloc(sizeof(int)*num_correlated_chunk); //it records the index of the correlated chunk in the analyzed access patterns
-	int num_crrltd_stripe;
-
-	num_crrltd_stripe=num_correlated_chunk/erasure_k;
 
 	//extract the correlated data chunks and their degrees
 	extract_caso_crltd_chnk_dgr(caso_crltd_mtrx, caso_crltd_dgr_mtrix, rcd_peer_chks, freq_peer_chks, num_correlated_chunk, num_peer_chks);
@@ -1791,7 +1792,7 @@ int calculate_chunk_num_io_matrix(int *io_matrix, int len, int width){
 // @accessed_stripes: records the involved stripes in a timestamp
 // @stripe_count: records the number of involved stripes in a timestamp
 // @io_matrix: if a chunk is accessed, then the corresponding cell is marked as 1
-void system_partial_stripe_writes(int *io_matrix, int *accessed_stripes, int stripe_count, int *total_write_block_num){
+void system_partial_stripe_writes(int *io_matrix, int *accessed_stripes, int stripe_count){
 
     int i,j;
     int io_amount;
@@ -1827,8 +1828,6 @@ void system_partial_stripe_writes(int *io_matrix, int *accessed_stripes, int str
 	printf("\nio_matrix:\n");
 	print_matrix(io_matrix, num_disk_stripe, stripe_count);
 #endif
-
-    *total_write_block_num+=io_amount;
 
     //record the name of disk array
     char *disk_array[14]={"/dev/sde","/dev/sdf","/dev/sdg","/dev/sdh","/dev/sdi","/dev/sdj","/dev/sdk","/dev/sdl","/dev/sdm","/dev/sdn",
@@ -2175,13 +2174,14 @@ void get_chnk_info(int chunk_id, CHUNK_INFO* chunk_info){
 	chunk_info->lg_id=chunk_info->chunk_id_in_stripe/num_chunk_per_lg;
 	
    	}
-   
+
 #if debug
    if(si->search_flag==1)
    	printf("Correlated chunk:\n");
 
    else 
    	printf("Uncorrelated chunk:\n");
+   
    printf("chunk_info->logical_chunk_id=%d\n", chunk_info->logical_chunk_id);
    printf("chunk_info->stripe_id=%d\n",        chunk_info->stripe_id);
    printf("chunk_info->chunk_id_in_stripe=%d\n", chunk_info->chunk_id_in_stripe);
@@ -2259,10 +2259,7 @@ int psw_time_caso(char *trace_name, char given_timestamp[], double *time){
 	int write_count;
 	int rotation;
 	int lg_id, lg_count=0;
-	int *total_caso_io;
-	int c=0;
 	
-	total_caso_io=&c;
 	stripe_count=0;
 	write_count=0;
 	lg_id=-1;
@@ -2319,7 +2316,7 @@ int psw_time_caso(char *trace_name, char given_timestamp[], double *time){
 			
 			// perform system write
 			gettimeofday(&begin_time, NULL);
-			//system_partial_stripe_writes(io_request, stripes_per_timestamp, stripe_count, total_caso_io);
+			//system_partial_stripe_writes(io_request, stripes_per_timestamp, stripe_count);
 			gettimeofday(&end_time, NULL);
 			*time+=end_time.tv_sec-begin_time.tv_sec+(end_time.tv_usec-begin_time.tv_usec)*1.0/1000000;
 
@@ -2393,7 +2390,7 @@ int psw_time_caso(char *trace_name, char given_timestamp[], double *time){
 
 	//for the last operation, add the parity update io
 	gettimeofday(&begin_time, NULL);
-	//system_partial_stripe_writes(io_request, stripes_per_timestamp, stripe_count, total_caso_io);
+	//system_partial_stripe_writes(io_request, stripes_per_timestamp, stripe_count);
 	gettimeofday(&end_time, NULL);
 	*time+=end_time.tv_sec-begin_time.tv_sec+(end_time.tv_usec-begin_time.tv_usec)*1.0/1000000;
 
@@ -2448,8 +2445,6 @@ int psw_time_striping(char *trace_name, char given_timestamp[], double *time){
 	int temp_stripe_id, temp_chunk_id;
 	int stripe_count;
 	int rotation;
-	int *total_write_block_num; 
-	int c=0;
 	int num_disk_stripe;
 
 	long long *size_int;
@@ -2491,7 +2486,6 @@ int psw_time_striping(char *trace_name, char given_timestamp[], double *time){
 
     lg_id=-1;
 	stripe_count=0;
-	total_write_block_num=&c;
 	write_count=0;
 	num_chnk_per_lg=erasure_k/num_lg;
 	
@@ -2542,7 +2536,7 @@ int psw_time_striping(char *trace_name, char given_timestamp[], double *time){
 
 			// perform the system write
 			gettimeofday(&begin_time, NULL);
-			//system_partial_stripe_writes(io_request, stripes_per_timestamp, stripe_count, total_write_block_num);
+			//system_partial_stripe_writes(io_request, stripes_per_timestamp, stripe_count);
 			gettimeofday(&end_time, NULL);
 			*time+=end_time.tv_sec-begin_time.tv_sec+(end_time.tv_usec-begin_time.tv_usec)*1.0/1000000;
 
@@ -2614,7 +2608,7 @@ int psw_time_striping(char *trace_name, char given_timestamp[], double *time){
 	}
 
 	gettimeofday(&begin_time, NULL);
-	//system_partial_stripe_writes(io_request, stripes_per_timestamp, stripe_count, total_write_block_num);
+	//system_partial_stripe_writes(io_request, stripes_per_timestamp, stripe_count);
 	gettimeofday(&end_time, NULL);
 	*time+=end_time.tv_sec-begin_time.tv_sec+(end_time.tv_usec-begin_time.tv_usec)*1.0/1000000;
 
@@ -2622,8 +2616,7 @@ int psw_time_striping(char *trace_name, char given_timestamp[], double *time){
 	// for the last operation
 	io_count+=stripe_count*erasure_m; 
 	io_count+=lg_count*lg_prty_num;
-	
-	//printf("num_of_write_op=%d, total_write_block_num=%d\n", write_count, *total_write_block_num);
+
 	printf("bso_io=%d, bso_time=%.2lf\n", io_count, *time);
 
 	fclose(fp);
@@ -2709,10 +2702,7 @@ int psw_time_continugous(char *trace_name, char given_timestamp[], double *time)
 	int *stripes_per_timestamp=(int*)malloc(sizeof(int)*max_accessed_stripes);
 	int* lg_per_tmstmp=(int*)malloc(sizeof(int)*max_accessed_stripes*num_lg); 
 	int *io_request=(int*)malloc(sizeof(int)*max_accessed_stripes*num_disk_stripe); // it records the io request in a timestamp
-	int *total_write_block_num; 
-	int c=0;
 
-	total_write_block_num=&c;
 	stripe_count=0;
 
 	struct timeval begin_time, end_time;
@@ -2764,7 +2754,7 @@ int psw_time_continugous(char *trace_name, char given_timestamp[], double *time)
 			//printf("timestamp=%s, stripe_count=%d\n",pre_timestamp,stripe_count);
 
 			gettimeofday(&begin_time, NULL);
-			//system_partial_stripe_writes(io_request, stripes_per_timestamp, stripe_count, total_write_block_num);
+			//system_partial_stripe_writes(io_request, stripes_per_timestamp, stripe_count);
 			gettimeofday(&end_time, NULL);
 			*time+=end_time.tv_sec-begin_time.tv_sec+(end_time.tv_usec-begin_time.tv_usec)*1.0/1000000;
 
@@ -2839,7 +2829,7 @@ int psw_time_continugous(char *trace_name, char given_timestamp[], double *time)
 
 	// for the last operation
 	gettimeofday(&begin_time, NULL);
-	//system_partial_stripe_writes(io_request, stripes_per_timestamp, stripe_count, total_write_block_num);
+	//system_partial_stripe_writes(io_request, stripes_per_timestamp, stripe_count);
 	gettimeofday(&end_time, NULL);
 	*time+=end_time.tv_sec-begin_time.tv_sec+(end_time.tv_usec-begin_time.tv_usec)*1.0/1000000;	 
 	io_count+=stripe_count*erasure_m;
@@ -2861,19 +2851,17 @@ int psw_time_continugous(char *trace_name, char given_timestamp[], double *time)
 // is available is marked as 1). What we do is to perform degraded reads
 // @stripe_id_array: it records the stripe id that is involved in the requests
 // @stripe_count: the number of stripes that are involved.
-int degraded_reads(int *io_request, int *stripe_id_array, int stripe_count, int if_continugous, int num_disk_stripe){
+void degraded_reads(int *io_request, int *stripe_id_array, int stripe_count, int if_continugous, int num_disk_stripe){
 
 	int i, j; 
 	int k;
 	int temp_stripe, temp_rotation;
 	int num_cur_req_chunks;
 	int num_extra_req_chunks, cur_extra_chunk;
-	int flag;
 	int lg_id;
 	int orig_failed_chunk_id;
 	int num_chnk_per_lg;
-
-	flag=0; 
+	
 	lg_id=-1;
 	num_chnk_per_lg=erasure_k/num_lg;
 
@@ -2892,7 +2880,6 @@ int degraded_reads(int *io_request, int *stripe_id_array, int stripe_count, int 
 			// if a requested chunk is lost
 			if(io_request[i*num_disk_stripe+j]==-1){
 
-				flag=1;
 				temp_stripe=stripe_id_array[i];
 
 				if(if_continugous==0)
@@ -2948,8 +2935,6 @@ int degraded_reads(int *io_request, int *stripe_id_array, int stripe_count, int 
 			}
 		}
 	}
-
-	return flag;
 }
 
 void dr_time_caso(char *trace_name, char given_timestamp[], int *num_extra_io, double *time){
@@ -3014,19 +2999,16 @@ void dr_time_caso(char *trace_name, char given_timestamp[], int *num_extra_io, d
 
 	int stripe_count;
 	int rotation;
-	int if_dr;
-	int *total_caso_io;
 	int flag;
-	int c=0;
+	int dr_crrltd_stripe_cnt;
 
-	total_caso_io=&c;
 	stripe_count=0;
 	none_crlttd_cnt=0;
 	total_access_stripes=0;
 	total_access_correlated_stripes=0;
+	dr_crrltd_stripe_cnt=0;
 	
 	struct timeval begin_time, end_time;
-
 	CHUNK_INFO* chunk_info=(CHUNK_INFO*)malloc(sizeof(CHUNK_INFO));
 
 	count=0;
@@ -3065,8 +3047,6 @@ void dr_time_caso(char *trace_name, char given_timestamp[], int *num_extra_io, d
 			access_start_block=(*offset_int)/block_size;
 			access_end_block=(*offset_int+*size_int-1)/block_size;
 
-			aver_read_size+=(access_end_block-access_start_block+1);
-
 			// we issue each read request immediately and initialize the io_request array
 			memset(io_request, 0, sizeof(int)*max_accessed_stripes*num_disk_stripe);
 			memset(stripes_per_timestamp, 0, sizeof(int)*max_accessed_stripes);
@@ -3080,6 +3060,10 @@ void dr_time_caso(char *trace_name, char given_timestamp[], int *num_extra_io, d
 				memset(chunk_info, 0, sizeof(CHUNK_INFO));
 				get_chnk_info(i, chunk_info); 
 				rotation=chunk_info->stripe_id%num_disk_stripe; 
+
+                // check the average read size in correlated stripes
+				//if(chunk_info->stripe_id < ognz_crrltd_cnt/erasure_k)
+					//aver_read_size++;
 
 				for(j=0; j<stripe_count; j++)
 					if(stripes_per_timestamp[j]==chunk_info->stripe_id)
@@ -3107,7 +3091,6 @@ void dr_time_caso(char *trace_name, char given_timestamp[], int *num_extra_io, d
 					total_access_correlated_stripes++;
 
 			total_access_stripes+=stripe_count;
-
 #if debug
     printf("stripes_per_timestamp:\n");
     print_matrix(stripes_per_timestamp, stripe_count, 1);
@@ -3116,13 +3099,27 @@ void dr_time_caso(char *trace_name, char given_timestamp[], int *num_extra_io, d
 	print_matrix(io_request, num_disk_stripe, stripe_count);
 	printf("\n");
 #endif
-
 			// check if the read is degraded read 
-			if_dr=degraded_reads(io_request, stripes_per_timestamp, stripe_count, 0, num_disk_stripe);			
+			degraded_reads(io_request, stripes_per_timestamp, stripe_count, 0, num_disk_stripe);			
 
 			io_count+=calculate_num_io(io_request, stripe_count, num_disk_stripe);
 			extra_io_count=calculate_extra_io(io_request, stripe_count, num_disk_stripe);
-			
+
+			// analyze the io_reques
+			for(i=0; i<stripe_count; i++){
+
+				if((stripes_per_timestamp[i] < ognz_crrltd_cnt/erasure_k) && (io_request[i*num_disk_stripe+failed_disk]==-1)){
+
+					dr_crrltd_stripe_cnt++;
+					aver_read_size++;
+
+					for(j=0; j<num_disk_stripe; j++)
+						if(io_request[i*num_disk_stripe+j]==1)
+							aver_read_size++;
+
+					}
+				}
+
 			*num_extra_io+=extra_io_count;
 			count++;
 
@@ -3136,7 +3133,7 @@ void dr_time_caso(char *trace_name, char given_timestamp[], int *num_extra_io, d
 	}
 
 	printf("%d\n", *num_extra_io);
-	printf("aver_read_size=%.2lf blocks\n", aver_read_size*1.0/count);
+	printf("aver_dr_crrltd_read_size=%.2lf blocks\n", aver_read_size*1.0/dr_crrltd_stripe_cnt);
 	printf("correlation_stripe_access_ratio=%.2lf\n", total_access_correlated_stripes*1.0/total_access_stripes);
 	
 	fclose(fp);	 
@@ -3175,8 +3172,8 @@ void dr_time_striping(char *trace_name, char given_timestamp[], int *num_extra_i
 	int io_count;
 	int extra_io_count;
 	int temp_stripe_id, temp_chunk_id;
-	int if_dr;
 	int num_disk_stripe;
+	int total_access_stripes;
 
 	long long *size_int;
 	long long *offset_int;
@@ -3206,27 +3203,25 @@ void dr_time_striping(char *trace_name, char given_timestamp[], int *num_extra_i
 	int max_accessed_stripes=max_access_chunks_per_timestamp; // suppose the maximum accessed stripes is 100
 	int* stripes_per_timestamp=(int*)malloc(sizeof(int)*max_accessed_stripes);
 	int* io_request=(int*)malloc(sizeof(int)*max_accessed_stripes*num_disk_stripe); // it records the io request in a timestamp
-
 	int stripe_count;
 	int rotation;
-	int *total_caso_io;
-	int c=0;
 	int flag;
-	
-	total_caso_io=&c;
-	stripe_count=0;
+	int dr_cnt;
 
 	struct timeval begin_time, end_time;
+	
+	count=0;
+	total_access_stripes=0;
+
+	aver_read_size=0;
+	dr_cnt=0;
 
 	for(failed_disk=0; failed_disk<num_disk_stripe; failed_disk++){
 
-		count=0;
 		flag=0;
 		fseek(fp, 0, SEEK_SET);
 
 		while(fgets(operation, sizeof(operation), fp)) {
-
-			count++;
 			
 			// break the operation
 			new_strtok(operation,divider,orig_timestamp);
@@ -3249,6 +3244,8 @@ void dr_time_striping(char *trace_name, char given_timestamp[], int *num_extra_i
 			// get the operation 
 			if(strcmp(op_type, "Read")!=0) 
 				continue;
+			
+			count++;
 
 			trnsfm_char_to_int(offset, offset_int);
 			trnsfm_char_to_int(size, size_int);
@@ -3300,11 +3297,27 @@ printf("\n");
 #endif
 
 			// perform degraded reads
-			if_dr=degraded_reads(io_request, stripes_per_timestamp, stripe_count, 0, num_disk_stripe);
+			degraded_reads(io_request, stripes_per_timestamp, stripe_count, 0, num_disk_stripe);
 
 			io_count+=calculate_num_io(io_request, stripe_count, num_disk_stripe);
 			extra_io_count=calculate_extra_io(io_request, stripe_count, num_disk_stripe);
 			*num_extra_io+=extra_io_count;
+			total_access_stripes+=stripe_count;
+
+            // calculate the average degraded read size
+			for(i=0; i<stripe_count; i++){
+
+				if(io_request[i*num_disk_stripe+failed_disk]==-1){
+
+					aver_read_size++;
+					dr_cnt++;
+
+					for(j=0; j<num_disk_stripe; j++)
+						if(io_request[i*num_disk_stripe+j]==1)
+							aver_read_size++;
+
+					}
+				}
 			
 #if debug
 printf("after degraded read:\n");
@@ -3316,6 +3329,7 @@ printf("*num_extra_io=%d\n", *num_extra_io);
 	}
 
 	printf("%d\n", *num_extra_io);
+	printf("aver_dr_size=%.2lf blocks\n", aver_read_size*1.0/dr_cnt);
 
 	fclose(fp);
 	free(stripes_per_timestamp);
@@ -3355,7 +3369,6 @@ void dr_time_continugous(char *trace_name, char given_timestamp[], int *num_extr
 	int stripe_count;
 	int temp_contiguous_block;
 	int temp_chunk_id;
-	int if_dr;
 	int num_disk_stripe;
 
 	long long *size_int;
@@ -3392,12 +3405,8 @@ void dr_time_continugous(char *trace_name, char given_timestamp[], int *num_extr
 	for(i=0;i<max_accessed_stripes*num_disk_stripe;i++)
 		io_request[i]=0;
 
-	int *total_caso_io;
-	int c=0;
 	int flag;
 	
-	total_caso_io=&c;
-
 	struct timeval begin_time, end_time;
 
 	for(failed_disk=0; failed_disk<num_disk_stripe; failed_disk++){
@@ -3483,24 +3492,12 @@ void dr_time_continugous(char *trace_name, char given_timestamp[], int *num_extr
 			}
 
 			// perform degraded reads
-			if_dr=degraded_reads(io_request, stripes_per_timestamp, stripe_count, 1, num_disk_stripe);
+			degraded_reads(io_request, stripes_per_timestamp, stripe_count, 1, num_disk_stripe);
 			
 			io_count+=calculate_num_io(io_request, stripe_count, num_disk_stripe);
 			extra_io_count=calculate_extra_io(io_request, stripe_count, num_disk_stripe);
 			*num_extra_io+=extra_io_count;
-
-			// if it is a degraded read, then perform system write
-			if(if_dr==1){
-
-				gettimeofday(&begin_time, NULL);
-
-				//for(i=0; i<50; i++)
-				//system_parallel_reads(io_request, stripes_per_timestamp, stripe_count, total_caso_io);
-
-				gettimeofday(&end_time, NULL);
-				*time+=(end_time.tv_sec-begin_time.tv_sec+(end_time.tv_usec-begin_time.tv_usec)*1.0/1000000)/50;
-
-			}
+			
 		}
 	}
 
@@ -3511,5 +3508,3 @@ void dr_time_continugous(char *trace_name, char given_timestamp[], int *num_extr
 	free(io_request);
 
 }
-
-

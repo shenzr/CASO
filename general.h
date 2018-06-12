@@ -19,7 +19,7 @@ extern void QuickSort_index(int *data, int index[],int left, int right);
 
 extern int calculate_chunk_num_io_matrix(int *io_matrix, int len, int width);
 
-extern void system_partial_stripe_writes(int *io_matrix, int *accessed_stripes, int stripe_count, int *total_write_block_num);
+extern void system_partial_stripe_writes(int *io_matrix, int *accessed_stripes, int stripe_count);
 
 extern int psw_time_caso(char *trace_name, char given_timestamp[], double *time);
 
@@ -27,7 +27,7 @@ extern int psw_time_striping(char *trace_name, char given_timestamp[], double *t
 
 extern int psw_time_continugous(char *trace_name, char given_timestamp[], double *time);
 
-extern int degraded_reads(int *io_request, int *stripe_id_array, int stripe_count, int *num_extra_io, int if_continugous, int num_disk_stripe);
+extern void degraded_reads(int *io_request, int *stripe_id_array, int stripe_count, int *num_extra_io, int if_continugous, int num_disk_stripe);
 
 extern void system_parallel_reads(int *io_matrix, int *accessed_stripes, int stripe_count, int *total_write_block_num);
 

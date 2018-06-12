@@ -22,7 +22,6 @@ int main(int argc, char *argv[]){
   int i;
   int count;
   int begin_timestamp_num;
-  int num_disk_stripe;
   double begin_stripe_ratio; 
 
   /* ===== initialize the parameters ====== */
@@ -38,13 +37,7 @@ int main(int argc, char *argv[]){
 
   /* ====== judge the input code_type ======*/
 
-  if(strcmp(code_type, "rs")==0)
-  	num_disk_stripe=erasure_k+erasure_m;
-
-  else if(strcmp(code_type, "lrc")==0)
-  	num_disk_stripe=erasure_k+erasure_m+lg_prty_num*num_lg;
-
-  else {
+  if(strcmp(code_type, "rs")!=0 && strcmp(code_type, "lrc")!=0){
 
 	printf("ERR: input code_type should be 'rs' or 'lrc' \n");
 	exit(1);
@@ -52,10 +45,10 @@ int main(int argc, char *argv[]){
   	}
 
   if(strcmp(code_type, "rs")==0)
-  	printf("\n+++++++ trace=%s, RS(%d,%d) ========\n", argv[1], erasure_k, erasure_m);
+  	printf("\n======== trace=%s, RS(%d,%d) ========\n", argv[1], erasure_k, erasure_m);
 
   else if(strcmp(code_type, "lrc")==0)
-  	printf("\n+++++++ trace=%s, LRC(%d,2,%d) ========\n", argv[1], erasure_k, erasure_m);
+  	printf("\n======== trace=%s, LRC(%d,2,%d) ========\n", argv[1], erasure_k, erasure_m);
 
   struct timeval bg_tm, ed_tm;
 
@@ -127,12 +120,11 @@ int main(int argc, char *argv[]){
 
   //printf("caso_analyze_time=%.2lf\n", ed_tm.tv_sec-bg_tm.tv_sec+(ed_tm.tv_usec-bg_tm.tv_usec)*1.0/1000000);
 
-  double *caso_time, *striping_time, *continugous_time;
-  double f=0, g=0, h=0;
+  double *caso_time, *striping_time;
+  double f=0, g=0;
   
   caso_time=&f;
-  striping_time=&g;
-  continugous_time=&h; 
+  striping_time=&g; 
 
   /* ========== Perform partial stripe writes ========= */
   //printf("+++++++++ partial stripe writes test +++++++++\n");
@@ -148,10 +140,6 @@ int main(int argc, char *argv[]){
   int *striping_num_extra_io;
   int d=0;
   striping_num_extra_io=&d;
-
-  int *continugous_num_extra_io;
-  int e=0;
-  continugous_num_extra_io=&e;
 
   //printf("+++++++++ degraded read test +++++++++\n");
   dr_time_caso(argv[1], begin_timestamp, caso_num_extra_io, caso_time); 
