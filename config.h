@@ -1,8 +1,8 @@
 #ifndef _COMMON_H
 #define _COMMON_H
 
-#define erasure_k 6
-#define erasure_m 3
+#define erasure_k 8
+#define erasure_m 4
 
 #define num_lg 2 // the number of local groups in a stripe, it should be divisible by erasure_m and erasure_k
 #define lg_prty_num 1  // the number of local parity in a local group 
