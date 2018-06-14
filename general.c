@@ -28,6 +28,7 @@
 #define inf 999999999
 #define talloc(type, num) (type *) malloc(sizeof(type)*(num))
 #define disk_capacity 299 // GB
+#define clean_cache_blk_num 1024*25 // the number of blocks read for cleaning cache in memory
 
 int num_distinct_chunks_timestamp[num_assume_timestamp];
 int poten_crrltd_cnt;
@@ -751,8 +752,6 @@ void replace_old_peer_chunk(int* freq_peer_chks, int* rcd_peer_chks, int* caso_p
 void record_access_freq(int bgn_tmstmp_num, int* analyze_chunks_time_slots, int* caso_poten_crrltd_chks, 
 		int* num_chunk_per_timestamp, int* rcd_peer_chks, int* freq_peer_chks, int* num_peer_chks){
 
-	//printf("-----> record_access_freq\n");
-
 	int i,j; 
 	int chk_idx1, chk_idx2;
 	int chunk_id1, chunk_id2;
@@ -929,11 +928,8 @@ void extract_caso_crltd_chnk_dgr(int* caso_crltd_mtrx, int* caso_crltd_dgr_mtrix
 
 				break;
 			}
-
 		}
-		
 	}
-
 }
 
 // find the maximum number of correlated chunks which are smaller than the given chunk
@@ -1780,7 +1776,7 @@ int calculate_chunk_num_io_matrix(int *io_matrix, int len, int width){
 
 
 	for(i=0;i<len*width;i++)
-		if(io_matrix[i]==1)
+		if(io_matrix[i]>0)
 			res++;
 
 
@@ -1788,7 +1784,7 @@ int calculate_chunk_num_io_matrix(int *io_matrix, int len, int width){
 
 }
 
-/*
+
 // @accessed_stripes: records the involved stripes in a timestamp
 // @stripe_count: records the number of involved stripes in a timestamp
 // @io_matrix: if a chunk is accessed, then the corresponding cell is marked as 1
@@ -1804,6 +1800,8 @@ void system_partial_stripe_writes(int *io_matrix, int *accessed_stripes, int str
 	int rotation;
 	int num_disk_stripe;
 	int disk_id;
+
+	//struct timeval begin_time, end_time;
 
     // get the value of num_disk_stripe
 	if(strcmp(code_type, "rs")==0)
@@ -1867,9 +1865,9 @@ void system_partial_stripe_writes(int *io_matrix, int *accessed_stripes, int str
 				
                 // make sure that the offset should not exceed the disk capacity. 
 				aio_list[io_index].aio_offset=1LL;
-                aio_list[io_index].aio_offset=aio_list[io_index].aio_offset*accessed_stripes[j]*block_size;
-
-				//printf("offset=%lld\n", (long long)aio_list[io_index].aio_offset);
+                aio_list[io_index].aio_offset=aio_list[io_index].aio_offset*accessed_stripes[j]*block_size; 
+                
+				//printf("io_index=%d, accessed_stripes=%d, offset=%lld\n", io_index, accessed_stripes[j], (long long)aio_list[io_index].aio_offset);
 				
                 aio_list[io_index].aio_reqprio=0;
                 ret = posix_memalign((void**)&aio_list[io_index].aio_buf, pagesize, block_size);
@@ -1880,6 +1878,7 @@ void system_partial_stripe_writes(int *io_matrix, int *accessed_stripes, int str
         }
 	}
 
+    //gettimeofday(&begin_time, NULL);
     // perform the read operations
     for(i=0;i<io_index;i++){
 
@@ -1901,11 +1900,15 @@ void system_partial_stripe_writes(int *io_matrix, int *accessed_stripes, int str
         }
     }
 
+    //gettimeofday(&end_time, NULL);
+    //printf("--aio_read_time=%.2lf\n", end_time.tv_sec-begin_time.tv_sec+(end_time.tv_usec-begin_time.tv_usec)*1.0/1000000);
+
 #if debug
     printf("updt_chnk_io_map:\n");
 	print_matrix(updt_chnk_io_map, num_disk_stripe, stripe_count);
 #endif
 
+    //gettimeofday(&begin_time, NULL);
     // perform encoding operation 
     int* rs_encoding_matrix;
     char** data_delta;
@@ -2013,8 +2016,6 @@ void system_partial_stripe_writes(int *io_matrix, int *accessed_stripes, int str
 			if(chunk_id_stripe<0)
 				chunk_id_stripe+=num_disk_stripe;
 
-			//printf("j=%d, chunk_id_stripe=%d\n",j,chunk_id_stripe);
-
 			// if it is a parity chunk 
 			if(chunk_id_stripe>=erasure_k){
 
@@ -2083,6 +2084,11 @@ void system_partial_stripe_writes(int *io_matrix, int *accessed_stripes, int str
 			}	
 		}
 
+	//gettimeofday(&end_time, NULL);
+	//printf("--cal_prty_time=%.2lf\n", end_time.tv_sec-begin_time.tv_sec+(end_time.tv_usec-begin_time.tv_usec)*1.0/1000000);
+
+    //gettimeofday(&begin_time, NULL);
+	
     // perform the write operations 
     for(i=0;i<io_index;i++){
 
@@ -2099,6 +2105,9 @@ void system_partial_stripe_writes(int *io_matrix, int *accessed_stripes, int str
 	    if((ret = aio_return(&aio_list[i]))==-1)
 		    printf("aio_write_return error, ret=%d, io_no=%d\n",ret,i);
     }
+
+	//gettimeofday(&end_time, NULL);
+	//printf("--aio_write_time=%.2lf\n", end_time.tv_sec-begin_time.tv_sec+(end_time.tv_usec-begin_time.tv_usec)*1.0/1000000);
 
     // close the files
     for(i=0; i<num_disk_stripe; i++)
@@ -2130,7 +2139,7 @@ void system_partial_stripe_writes(int *io_matrix, int *accessed_stripes, int str
 	
 
 }
-*/
+
 
 void get_chnk_info(int chunk_id, CHUNK_INFO* chunk_info){
 
@@ -2317,13 +2326,7 @@ int psw_time_caso(char *trace_name, char given_timestamp[], double *time){
 
 			if(strcmp(code_type, "lrc")==0)
 				io_count+=lg_count*lg_prty_num;
-			
-			// perform system write
-			gettimeofday(&begin_time, NULL);
-			//system_partial_stripe_writes(io_request, stripes_per_timestamp, stripe_count);
-			gettimeofday(&end_time, NULL);
-			*time+=end_time.tv_sec-begin_time.tv_sec+(end_time.tv_usec-begin_time.tv_usec)*1.0/1000000;
-			
+#if debug			
 	printf("CASO: %d-th write, %d blocks updated\n", write_count, updt_chnk_cnt);
 	printf("CASO: stripes_per_timestamp:\n");
 	print_matrix(stripes_per_timestamp, stripe_count, 1);
@@ -2331,6 +2334,14 @@ int psw_time_caso(char *trace_name, char given_timestamp[], double *time){
 	printf("CASO: io_request:\n");
 	print_matrix(io_request, num_disk_stripe, stripe_count);
 	printf("\n");
+#endif
+
+			// perform system write
+			gettimeofday(&begin_time, NULL);
+			system_partial_stripe_writes(io_request, stripes_per_timestamp, stripe_count);
+			gettimeofday(&end_time, NULL);
+			*time+=end_time.tv_sec-begin_time.tv_sec+(end_time.tv_usec-begin_time.tv_usec)*1.0/1000000;
+			//printf("CASO_write_time=%.2lf\n", *time);
 
 			// re-initialize the io_request array
 			memset(io_request, 0, sizeof(int)*max_accessed_stripes*num_disk_stripe);
@@ -2400,16 +2411,15 @@ int psw_time_caso(char *trace_name, char given_timestamp[], double *time){
 			if(strcmp(code_type, "lrc")==0)
 				io_request[j*num_disk_stripe+(erasure_k+lg_id+rotation)%num_disk_stripe]=2;
 
-		//printf("stripe_id=%d, lg_id=%d\n", chunk_info->stripe_id, chunk_info->lg_id);
-
 		}
 	}
 
 	//for the last operation, add the parity update io
 	gettimeofday(&begin_time, NULL);
-	//system_partial_stripe_writes(io_request, stripes_per_timestamp, stripe_count);
+	system_partial_stripe_writes(io_request, stripes_per_timestamp, stripe_count);
 	gettimeofday(&end_time, NULL);
 	*time+=end_time.tv_sec-begin_time.tv_sec+(end_time.tv_usec-begin_time.tv_usec)*1.0/1000000;
+	//printf("CASO_cur_write_time=%.2lf\n", *time);
 
 	write_count++;
 
@@ -2418,7 +2428,7 @@ int psw_time_caso(char *trace_name, char given_timestamp[], double *time){
 
 	//printf("write_count=%d\n", write_count);
 	printf("caso_io=%d, caso_time=%.2lf\n", io_count, *time);
-	printf("caso_write_count=%d, caso_write_stripe_cnt=%d\n", write_count, write_stripe_cnt);
+	//printf("caso_write_count=%d, caso_write_stripe_cnt=%d\n", write_count, write_stripe_cnt);
 
 	fclose(fp);
 	free(stripes_per_timestamp);
@@ -2555,13 +2565,7 @@ int psw_time_striping(char *trace_name, char given_timestamp[], double *time){
 
 			if(strcmp(code_type, "lrc")==0)
 				io_count+=lg_count*lg_prty_num;
-
-			// perform the system write
-			gettimeofday(&begin_time, NULL);
-			//system_partial_stripe_writes(io_request, stripes_per_timestamp, stripe_count);
-			gettimeofday(&end_time, NULL);
-			*time+=end_time.tv_sec-begin_time.tv_sec+(end_time.tv_usec-begin_time.tv_usec)*1.0/1000000;
-
+#if debug
 	printf("BSO: %d-th write, %d blocks updated\n", write_count, updt_chnk_cnt);
 	printf("BSO: stripes_per_timestamp:\n");
 	print_matrix(stripes_per_timestamp, stripe_count, 1);
@@ -2569,6 +2573,13 @@ int psw_time_striping(char *trace_name, char given_timestamp[], double *time){
 	printf("BSO: io_request:\n");
 	print_matrix(io_request, num_disk_stripe, stripe_count);
 	printf("\n");
+#endif
+			// perform the system write
+			gettimeofday(&begin_time, NULL);
+			system_partial_stripe_writes(io_request, stripes_per_timestamp, stripe_count);
+			gettimeofday(&end_time, NULL);
+			*time+=end_time.tv_sec-begin_time.tv_sec+(end_time.tv_usec-begin_time.tv_usec)*1.0/1000000;
+			//printf("BSO_cur_write_time=%.2lf\n", *time);
 
 			// re-initiate the stripes_per_timestamp
 			memset(io_request, 0, sizeof(int)*max_accessed_stripes*num_disk_stripe);
@@ -2639,9 +2650,10 @@ int psw_time_striping(char *trace_name, char given_timestamp[], double *time){
 	}
 
 	gettimeofday(&begin_time, NULL);
-	//system_partial_stripe_writes(io_request, stripes_per_timestamp, stripe_count);
+	system_partial_stripe_writes(io_request, stripes_per_timestamp, stripe_count);
 	gettimeofday(&end_time, NULL);
 	*time+=end_time.tv_sec-begin_time.tv_sec+(end_time.tv_usec-begin_time.tv_usec)*1.0/1000000;
+	//printf("BSO_write_time=%.2lf\n", *time);
 
 	write_count++;
 	// for the last operation
@@ -2649,7 +2661,7 @@ int psw_time_striping(char *trace_name, char given_timestamp[], double *time){
 	io_count+=lg_count*lg_prty_num;
 
 	printf("bso_io=%d, bso_time=%.2lf\n", io_count, *time);
-	printf("bso_write_count=%d, bso_write_stripe_cnt=%d\n", write_count, write_stripe_cnt);
+	//printf("bso_write_count=%d, bso_write_stripe_cnt=%d\n", write_count, write_stripe_cnt);
 
 	fclose(fp);
 	free(stripes_per_timestamp);
@@ -3040,7 +3052,6 @@ void dr_time_caso(char *trace_name, char given_timestamp[], int *num_extra_io, d
 	total_access_correlated_stripes=0;
 	dr_crrltd_stripe_cnt=0;
 	
-	struct timeval begin_time, end_time;
 	CHUNK_INFO* chunk_info=(CHUNK_INFO*)malloc(sizeof(CHUNK_INFO));
 
 	count=0;
@@ -3239,8 +3250,6 @@ void dr_time_striping(char *trace_name, char given_timestamp[], int *num_extra_i
 	int rotation;
 	int flag;
 	int dr_cnt;
-
-	struct timeval begin_time, end_time;
 	
 	count=0;
 	total_access_stripes=0;
@@ -3438,8 +3447,6 @@ void dr_time_continugous(char *trace_name, char given_timestamp[], int *num_extr
 		io_request[i]=0;
 
 	int flag;
-	
-	struct timeval begin_time, end_time;
 
 	for(failed_disk=0; failed_disk<num_disk_stripe; failed_disk++){
 
@@ -3540,3 +3547,53 @@ void dr_time_continugous(char *trace_name, char given_timestamp[], int *num_extr
 	free(io_request);
 
 }
+
+
+/*
+ * this functions read the data from a file and write a large amount of data to the disks
+*/
+
+void clean_cache(void){
+
+	int disk_num;
+	int pagesize;
+	off_t offset;
+	int i;
+	int fd_disk;
+	int ret;
+	int *buffer;
+
+	pagesize=getpagesize();
+   
+    //record the name of disk array
+    char *disk_array[14]={"/dev/sde","/dev/sdf","/dev/sdg","/dev/sdh","/dev/sdi","/dev/sdj","/dev/sdk","/dev/sdl","/dev/sdm","/dev/sdn",
+        "/dev/sdo","/dev/sdp","/dev/sdq","/dev/sdr"};
+
+
+    //read the data to the main memory
+    offset=1LL;
+	offset=offset*100*1024*1024*1024;
+
+	if(strcmp(code_type,"rs")==0)
+		disk_num=erasure_k+erasure_m;
+
+	else 
+		disk_num=erasure_k+erasure_m+num_lg;
+
+    for(i=0; i<disk_num; i++){
+		 
+   	   fd_disk=open64(disk_array[i], O_RDWR | O_DIRECT);
+
+	   	ret = posix_memalign((void**)&buffer, pagesize, clean_cache_blk_num*block_size);
+		if(ret)
+			printf("clear cache: posix_memalign error\n");
+
+	    if(pread(fd_disk, buffer, clean_cache_blk_num*block_size, offset)!=clean_cache_blk_num*block_size)
+	       printf("read error!\n");
+
+	    close(fd_disk);
+		free(buffer);
+		
+      }   
+}
+

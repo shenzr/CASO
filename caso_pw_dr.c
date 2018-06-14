@@ -85,9 +85,6 @@ int main(int argc, char *argv[]){
   	if(freq_access_chunk[i]>=2)
 		count++;
 
-  //printf("max_access_chunks_per_timestamp=%d\n", max_access_chunks_per_timestamp);
-
-  //printf("max_access_chunks_per_timestamp=%d\n",max_access_chunks_per_timestamp);
   int* analyze_chunks_time_slots=(int*)malloc(sizeof(int)*begin_timestamp_num*max_access_chunks_per_timestamp);// record all the accessed blocks at every timestamp
   int* access_time_slots_index=(int*)malloc(sizeof(int)*begin_timestamp_num*max_access_chunks_per_timestamp); // it records the index of each chunk of total_access in the trace_access_pattern
   int* num_chunk_per_timestamp=(int*)malloc(sizeof(int)*begin_timestamp_num);  // it records the number of accessed chunks in every timestamp before erasure coding
@@ -129,7 +126,9 @@ int main(int argc, char *argv[]){
   /* ========== Perform partial stripe writes ========= */
   //printf("+++++++++ partial stripe writes test +++++++++\n");
   psw_time_caso(argv[1],begin_timestamp, caso_time);
+  clean_cache();
   psw_time_striping(argv[1], begin_timestamp, striping_time);
+  clean_cache();
   //psw_time_continugous(argv[1], begin_timestamp,continugous_time);
 
   /* ========== Perform degraded reads ========= */
