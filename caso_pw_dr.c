@@ -68,13 +68,8 @@ int main(int argc, char *argv[]){
   		}
   	}
 
-  //printf("cur_rcd_idx=%d, access_freq_all_chunks=%d \n", cur_rcd_idx, total_access_chunk_num); 
-  //printf("num_chunks_accessed_more_2_times=%d, freq_chunks_access_more_2_times=%d\n", count, count_larger_2);
-
   // calculate the partial stripe writes io 
   begin_timestamp_num=begin_stripe_ratio*num_timestamp;
-
-  //printf("num_timestamp=%d, validate_timestamp=%d\n", num_timestamp, begin_timestamp_num);
 
   // determine the begin_timestamp
   char begin_timestamp[100];
@@ -115,7 +110,7 @@ int main(int argc, char *argv[]){
 
   gettimeofday(&ed_tm, NULL);
 
-  //printf("caso_analyze_time=%.2lf\n", ed_tm.tv_sec-bg_tm.tv_sec+(ed_tm.tv_usec-bg_tm.tv_usec)*1.0/1000000);
+  printf("caso_analyze_time=%.6lf\n", ed_tm.tv_sec-bg_tm.tv_sec+(ed_tm.tv_usec-bg_tm.tv_usec)*1.0/1000000);
 
   double *caso_time, *striping_time;
   double f=0, g=0;
@@ -125,10 +120,10 @@ int main(int argc, char *argv[]){
 
   /* ========== Perform partial stripe writes ========= */
   //printf("+++++++++ partial stripe writes test +++++++++\n");
-  psw_time_caso(argv[1],begin_timestamp, caso_time);
-  clean_cache();
-  psw_time_striping(argv[1], begin_timestamp, striping_time);
-  clean_cache();
+  //psw_time_caso(argv[1],begin_timestamp, caso_time);
+  //clean_cache();
+  //psw_time_striping(argv[1], begin_timestamp, striping_time);
+  //clean_cache();
   //psw_time_continugous(argv[1], begin_timestamp,continugous_time);
 
   /* ========== Perform degraded reads ========= */
