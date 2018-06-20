@@ -1537,11 +1537,11 @@ void caso_stripe_ognztn(char *trace_name,  int *analyze_chunks_time_slots, int *
 	count_timestamp=0;
 	if_begin=1;
 
-	for(i=0;i<bgn_tmstmp_num*max_access_chunks_per_timestamp;i++)
-		analyze_chunks_time_slots[i]=0;
+	memset(analyze_chunks_time_slots, 0, sizeof(int)*bgn_tmstmp_num*max_access_chunks_per_timestamp);
+	memset(num_chunk_per_timestamp, 0, sizeof(int)*bgn_tmstmp_num);
 
-	for(i=0;i<bgn_tmstmp_num;i++)
-		num_chunk_per_timestamp[i]=0;
+	struct timeval begin_time, end_time; 
+	gettimeofday(&begin_time, NULL);
 
 	/* record the access chunks per timestamp in a table */
 	while(fgets(operation, sizeof(operation), fp)){
@@ -1716,8 +1716,16 @@ void caso_stripe_ognztn(char *trace_name,  int *analyze_chunks_time_slots, int *
 
 		}
 
+	gettimeofday(&end_time, NULL);
+	printf("-correlation_analysis_time=%.6lf\n", end_time.tv_sec-begin_time.tv_sec+(end_time.tv_usec-begin_time.tv_usec)*1.0/1000000);
+
+	gettimeofday(&begin_time, NULL);
+
 	//stripe organization
 	stripe_orgnzt(caso_crltd_mtrx, caso_crltd_dgr_mtrix, num_correlated_chunk, crrltd_chnk_pttn_idx);
+
+	gettimeofday(&end_time, NULL);
+	printf("-stripe_organization_time=%.6lf\n", end_time.tv_sec-begin_time.tv_sec+(end_time.tv_usec-begin_time.tv_usec)*1.0/1000000);
 
 	free(freq_peer_chks);
 	free(correlate_chunk_bucket);
@@ -2326,7 +2334,7 @@ int psw_time_caso(char *trace_name, char given_timestamp[], double *time){
 
 			if(strcmp(code_type, "lrc")==0)
 				io_count+=lg_count*lg_prty_num;
-#if debug			
+		
 	printf("CASO: %d-th write, %d blocks updated\n", write_count, updt_chnk_cnt);
 	printf("CASO: stripes_per_timestamp:\n");
 	print_matrix(stripes_per_timestamp, stripe_count, 1);
@@ -2334,14 +2342,14 @@ int psw_time_caso(char *trace_name, char given_timestamp[], double *time){
 	printf("CASO: io_request:\n");
 	print_matrix(io_request, num_disk_stripe, stripe_count);
 	printf("\n");
-#endif
+
 
 			// perform system write
 			gettimeofday(&begin_time, NULL);
 			system_partial_stripe_writes(io_request, stripes_per_timestamp, stripe_count);
 			gettimeofday(&end_time, NULL);
 			*time+=end_time.tv_sec-begin_time.tv_sec+(end_time.tv_usec-begin_time.tv_usec)*1.0/1000000;
-			//printf("CASO_write_time=%.2lf\n", *time);
+			printf("CASO_write_time=%.2lf\n", *time);
 
 			// re-initialize the io_request array
 			memset(io_request, 0, sizeof(int)*max_accessed_stripes*num_disk_stripe);
@@ -2419,7 +2427,7 @@ int psw_time_caso(char *trace_name, char given_timestamp[], double *time){
 	system_partial_stripe_writes(io_request, stripes_per_timestamp, stripe_count);
 	gettimeofday(&end_time, NULL);
 	*time+=end_time.tv_sec-begin_time.tv_sec+(end_time.tv_usec-begin_time.tv_usec)*1.0/1000000;
-	//printf("CASO_cur_write_time=%.2lf\n", *time);
+	printf("CASO_cur_write_time=%.2lf\n", *time);
 
 	write_count++;
 
@@ -2565,7 +2573,7 @@ int psw_time_striping(char *trace_name, char given_timestamp[], double *time){
 
 			if(strcmp(code_type, "lrc")==0)
 				io_count+=lg_count*lg_prty_num;
-#if debug
+
 	printf("BSO: %d-th write, %d blocks updated\n", write_count, updt_chnk_cnt);
 	printf("BSO: stripes_per_timestamp:\n");
 	print_matrix(stripes_per_timestamp, stripe_count, 1);
@@ -2573,13 +2581,13 @@ int psw_time_striping(char *trace_name, char given_timestamp[], double *time){
 	printf("BSO: io_request:\n");
 	print_matrix(io_request, num_disk_stripe, stripe_count);
 	printf("\n");
-#endif
+
 			// perform the system write
 			gettimeofday(&begin_time, NULL);
 			system_partial_stripe_writes(io_request, stripes_per_timestamp, stripe_count);
 			gettimeofday(&end_time, NULL);
 			*time+=end_time.tv_sec-begin_time.tv_sec+(end_time.tv_usec-begin_time.tv_usec)*1.0/1000000;
-			//printf("BSO_cur_write_time=%.2lf\n", *time);
+			printf("BSO_cur_write_time=%.2lf\n", *time);
 
 			// re-initiate the stripes_per_timestamp
 			memset(io_request, 0, sizeof(int)*max_accessed_stripes*num_disk_stripe);
@@ -2653,7 +2661,7 @@ int psw_time_striping(char *trace_name, char given_timestamp[], double *time){
 	system_partial_stripe_writes(io_request, stripes_per_timestamp, stripe_count);
 	gettimeofday(&end_time, NULL);
 	*time+=end_time.tv_sec-begin_time.tv_sec+(end_time.tv_usec-begin_time.tv_usec)*1.0/1000000;
-	//printf("BSO_write_time=%.2lf\n", *time);
+	printf("BSO_write_time=%.2lf\n", *time);
 
 	write_count++;
 	// for the last operation

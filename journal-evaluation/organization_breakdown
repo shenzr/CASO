@@ -1,0 +1,132 @@
+round-1
+
+======== trace=msr-traces/wdev_1.csv, RS(4,2) ========
+-correlation_analysis_time=0.000929
+-stripe_organization_time=0.000005
+
+======== trace=msr-traces/wdev_2.csv, RS(4,2) ========
+-correlation_analysis_time=2.900775
+-stripe_organization_time=30.139338
+
+======== trace=msr-traces/wdev_3.csv, RS(4,2) ========
+-correlation_analysis_time=0.003291
+-stripe_organization_time=0.000026
+
+======== trace=msr-traces/rsrch_1.csv, RS(4,2) ========
+-correlation_analysis_time=0.104125
+-stripe_organization_time=0.044154
+
+======== trace=msr-traces/rsrch_2.csv, RS(4,2) ========
+-correlation_analysis_time=1.201331
+-stripe_organization_time=0.788085
+
+======== trace=msr-traces/src2_1.csv, RS(4,2) ========
+-correlation_analysis_time=1.330429
+-stripe_organization_time=1.867883
+
+======== trace=msr-traces/hm_1.csv, RS(4,2) ========
+-correlation_analysis_time=8.006225
+-stripe_organization_time=59.976133
+
+======== trace=msr-traces/wdev_0.csv, RS(4,2) ========
+-correlation_analysis_time=46.043900
+-stripe_organization_time=649.395655
+round-2
+
+======== trace=msr-traces/wdev_1.csv, RS(4,2) ========
+-correlation_analysis_time=0.000923
+-stripe_organization_time=0.000005
+
+======== trace=msr-traces/wdev_2.csv, RS(4,2) ========
+-correlation_analysis_time=2.900378
+-stripe_organization_time=30.160105
+
+======== trace=msr-traces/wdev_3.csv, RS(4,2) ========
+-correlation_analysis_time=0.003347
+-stripe_organization_time=0.000026
+
+======== trace=msr-traces/rsrch_1.csv, RS(4,2) ========
+-correlation_analysis_time=0.104187
+-stripe_organization_time=0.044106
+
+======== trace=msr-traces/rsrch_2.csv, RS(4,2) ========
+-correlation_analysis_time=1.201971
+-stripe_organization_time=0.788352
+
+======== trace=msr-traces/src2_1.csv, RS(4,2) ========
+-correlation_analysis_time=1.329627
+-stripe_organization_time=2.015226
+
+======== trace=msr-traces/hm_1.csv, RS(4,2) ========
+-correlation_analysis_time=8.010639
+-stripe_organization_time=59.994732
+
+======== trace=msr-traces/wdev_0.csv, RS(4,2) ========
+-correlation_analysis_time=45.933082
+-stripe_organization_time=649.395410
+round-3
+
+======== trace=msr-traces/wdev_1.csv, RS(4,2) ========
+-correlation_analysis_time=0.000915
+-stripe_organization_time=0.000004
+
+======== trace=msr-traces/wdev_2.csv, RS(4,2) ========
+-correlation_analysis_time=2.895359
+-stripe_organization_time=30.162419
+
+======== trace=msr-traces/wdev_3.csv, RS(4,2) ========
+-correlation_analysis_time=0.003303
+-stripe_organization_time=0.000026
+
+======== trace=msr-traces/rsrch_1.csv, RS(4,2) ========
+-correlation_analysis_time=0.104038
+-stripe_organization_time=0.044144
+
+======== trace=msr-traces/rsrch_2.csv, RS(4,2) ========
+-correlation_analysis_time=1.199121
+-stripe_organization_time=0.790934
+
+======== trace=msr-traces/src2_1.csv, RS(4,2) ========
+-correlation_analysis_time=1.331169
+-stripe_organization_time=2.046487
+
+======== trace=msr-traces/hm_1.csv, RS(4,2) ========
+-correlation_analysis_time=8.008416
+-stripe_organization_time=60.006237
+
+======== trace=msr-traces/wdev_0.csv, RS(4,2) ========
+-correlation_analysis_time=45.982311
+-stripe_organization_time=649.200181
+round-4
+
+======== trace=msr-traces/wdev_1.csv, RS(4,2) ========
+-correlation_analysis_time=0.000933
+-stripe_organization_time=0.000005
+
+======== trace=msr-traces/wdev_2.csv, RS(4,2) ========
+-correlation_analysis_time=2.893585
+-stripe_organization_time=30.181364
+
+======== trace=msr-traces/wdev_3.csv, RS(4,2) ========
+-correlation_analysis_time=0.003288
+-stripe_organization_time=0.000025
+
+======== trace=msr-traces/rsrch_1.csv, RS(4,2) ========
+-correlation_analysis_time=0.104110
+-stripe_organization_time=0.044139
+
+======== trace=msr-traces/rsrch_2.csv, RS(4,2) ========
+-correlation_analysis_time=1.201311
+-stripe_organization_time=0.794822
+
+======== trace=msr-traces/src2_1.csv, RS(4,2) ========
+-correlation_analysis_time=1.329443
+-stripe_organization_time=2.022832
+
+======== trace=msr-traces/hm_1.csv, RS(4,2) ========
+-correlation_analysis_time=8.007506
+-stripe_organization_time=60.018569
+
+======== trace=msr-traces/wdev_0.csv, RS(4,2) ========
+-correlation_analysis_time=45.971826
+-stripe_organization_time=649.219581

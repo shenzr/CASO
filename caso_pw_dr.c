@@ -119,11 +119,11 @@ int main(int argc, char *argv[]){
   striping_time=&g; 
 
   /* ========== Perform partial stripe writes ========= */
-  //printf("+++++++++ partial stripe writes test +++++++++\n");
-  //psw_time_caso(argv[1],begin_timestamp, caso_time);
-  //clean_cache();
-  //psw_time_striping(argv[1], begin_timestamp, striping_time);
-  //clean_cache();
+  printf("+++++++++ partial stripe writes test +++++++++\n");
+  psw_time_caso(argv[1],begin_timestamp, caso_time);
+  clean_cache();
+  psw_time_striping(argv[1], begin_timestamp, striping_time);
+  clean_cache();
   //psw_time_continugous(argv[1], begin_timestamp,continugous_time);
 
   /* ========== Perform degraded reads ========= */
