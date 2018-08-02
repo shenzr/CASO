@@ -14,157 +14,157 @@
 
 int main(int argc, char *argv[]){
 
-  if(argc!=4){
-  	printf("./s trace_name begin_stripe_ratio code_type!\n");
-	exit(1);
-  	}
+    if(argc!=4){
+        printf("./s trace_name begin_stripe_ratio code_type!\n");
+        exit(1);
+    }
 
-  int i;
-  int count;
-  int begin_timestamp_num;
-  double begin_stripe_ratio; 
+    int i;
+    int count;
+    int begin_timestamp_num;
+    double begin_stripe_ratio; 
 
-  /* ===== initialize the parameters ====== */
-  begin_stripe_ratio=atoi(argv[2])*1.0/100;
-  strcpy(code_type, argv[3]);
-  total_access_chunk_num=0;
-  num_timestamp=0;
-  max_access_chunks_per_timestamp=-1;
-  num_rele_chunks=0;
-  
-  crlltn_hit_ratio=0;
-  aver_read_size=0;
+    /* ===== initialize the parameters ====== */
+    begin_stripe_ratio=atoi(argv[2])*1.0/100;
+    strcpy(code_type, argv[3]);
+    total_access_chunk_num=0;
+    num_timestamp=0;
+    max_access_chunks_per_timestamp=-1;
+    num_rele_chunks=0;
 
-  /* ====== judge the input code_type ======*/
+    crlltn_hit_ratio=0;
+    aver_read_size=0;
 
-  if(strcmp(code_type, "rs")!=0 && strcmp(code_type, "lrc")!=0){
+    /* ====== judge the input code_type ======*/
 
-	printf("ERR: input code_type should be 'rs' or 'lrc' \n");
-	exit(1);
+    if(strcmp(code_type, "rs")!=0 && strcmp(code_type, "lrc")!=0){
 
-  	}
+        printf("ERR: input code_type should be 'rs' or 'lrc' \n");
+        exit(1);
 
-  if(strcmp(code_type, "rs")==0)
-  	printf("\n======== trace=%s, RS(%d,%d) ========\n", argv[1], erasure_k, erasure_m);
+    }
 
-  else if(strcmp(code_type, "lrc")==0)
-  	printf("\n======== trace=%s, LRC(%d,2,%d) ========\n", argv[1], erasure_k, erasure_m);
+    if(strcmp(code_type, "rs")==0)
+        printf("\n======== trace=%s, RS(%d,%d) ========\n", argv[1], erasure_k, erasure_m);
 
-  struct timeval bg_tm, ed_tm;
+    else if(strcmp(code_type, "lrc")==0)
+        printf("\n======== trace=%s, LRC(%d,2,%d) ========\n", argv[1], erasure_k, erasure_m);
 
-  memset(access_bucket, -1, sizeof(int)*max_aces_blk_num);
-  memset(order_access_bucket, 0, sizeof(int)*max_aces_blk_num);
-  memset(trace_access_pattern, -1, sizeof(int)*max_aces_blk_num);
-  memset(freq_access_chunk, 0, sizeof(int)*max_aces_blk_num);
+    struct timeval bg_tm, ed_tm;
 
-  calculate_chunk_num(argv[1]);
+    memset(access_bucket, -1, sizeof(int)*max_aces_blk_num);
+    memset(order_access_bucket, 0, sizeof(int)*max_aces_blk_num);
+    memset(trace_access_pattern, -1, sizeof(int)*max_aces_blk_num);
+    memset(freq_access_chunk, 0, sizeof(int)*max_aces_blk_num);
 
-  int count_larger_2=0;
-  count=0;
-  for(i=0;i<cur_rcd_idx;i++){
-  	if(freq_access_chunk[i]>=2){
-		count++;
-		count_larger_2+=freq_access_chunk[i];
-  		}
-  	}
+    calculate_chunk_num(argv[1]);
 
-  // calculate the partial stripe writes io 
-  begin_timestamp_num=begin_stripe_ratio*num_timestamp;
+    int count_larger_2=0;
+    count=0;
+    for(i=0;i<cur_rcd_idx;i++){
+        if(freq_access_chunk[i]>=2){
+            count++;
+            count_larger_2+=freq_access_chunk[i];
+        }
+    }
 
-  // determine the begin_timestamp
-  char begin_timestamp[100];
-  determine_begin_timestamp(argv[1], begin_timestamp, begin_timestamp_num);
+    // calculate the partial stripe writes io 
+    begin_timestamp_num=begin_stripe_ratio*num_timestamp;
 
-  count=0;
-  for(i=0; i<caso_rcd_idx; i++)
-  	if(freq_access_chunk[i]>=2)
-		count++;
+    // determine the begin_timestamp
+    char begin_timestamp[100];
+    determine_begin_timestamp(argv[1], begin_timestamp, begin_timestamp_num);
 
-  int* analyze_chunks_time_slots=(int*)malloc(sizeof(int)*begin_timestamp_num*max_access_chunks_per_timestamp);// record all the accessed blocks at every timestamp
-  int* access_time_slots_index=(int*)malloc(sizeof(int)*begin_timestamp_num*max_access_chunks_per_timestamp); // it records the index of each chunk of total_access in the trace_access_pattern
-  int* num_chunk_per_timestamp=(int*)malloc(sizeof(int)*begin_timestamp_num);  // it records the number of accessed chunks in every timestamp before erasure coding
-  int* sort_caso_rcd_pattern=(int*)malloc(sizeof(int)*caso_rcd_idx); //it records the sorted values of the data for correlation analysis in CASO
-  int* sort_caso_rcd_index=(int*)malloc(sizeof(int)*caso_rcd_idx);
-  int* sort_caso_rcd_freq=(int*)malloc(sizeof(int)*caso_rcd_idx);
-  
-  int orig_index;
+    count=0;
+    for(i=0; i<caso_rcd_idx; i++)
+        if(freq_access_chunk[i]>=2)
+            count++;
 
-  for(i=0; i<caso_rcd_idx; i++)
-  	sort_caso_rcd_pattern[i]=trace_access_pattern[i];
+    int* analyze_chunks_time_slots=(int*)malloc(sizeof(int)*begin_timestamp_num*max_access_chunks_per_timestamp);// record all the accessed blocks at every timestamp
+    int* access_time_slots_index=(int*)malloc(sizeof(int)*begin_timestamp_num*max_access_chunks_per_timestamp); // it records the index of each chunk of total_access in the trace_access_pattern
+    int* num_chunk_per_timestamp=(int*)malloc(sizeof(int)*begin_timestamp_num);  // it records the number of accessed chunks in every timestamp before erasure coding
+    int* sort_caso_rcd_pattern=(int*)malloc(sizeof(int)*caso_rcd_idx); //it records the sorted values of the data for correlation analysis in CASO
+    int* sort_caso_rcd_index=(int*)malloc(sizeof(int)*caso_rcd_idx);
+    int* sort_caso_rcd_freq=(int*)malloc(sizeof(int)*caso_rcd_idx);
 
-  for(i=0; i<caso_rcd_idx; i++)
-  	sort_caso_rcd_index[i]=i;
+    int orig_index;
 
-  QuickSort_index(sort_caso_rcd_pattern, sort_caso_rcd_index, 0, caso_rcd_idx-1);
+    for(i=0; i<caso_rcd_idx; i++)
+        sort_caso_rcd_pattern[i]=trace_access_pattern[i];
 
-  for(i=0; i<caso_rcd_idx; i++){
-  	
-  	orig_index=sort_caso_rcd_index[i];
-	sort_caso_rcd_freq[i]=freq_access_chunk[orig_index];
+    for(i=0; i<caso_rcd_idx; i++)
+        sort_caso_rcd_index[i]=i;
 
-  	}
-  	
-  gettimeofday(&bg_tm, NULL);
+    QuickSort_index(sort_caso_rcd_pattern, sort_caso_rcd_index, 0, caso_rcd_idx-1);
 
-  caso_stripe_ognztn(argv[1], analyze_chunks_time_slots, num_chunk_per_timestamp, begin_timestamp_num, sort_caso_rcd_pattern, sort_caso_rcd_index, sort_caso_rcd_freq);
+    for(i=0; i<caso_rcd_idx; i++){
 
-  gettimeofday(&ed_tm, NULL);
+        orig_index=sort_caso_rcd_index[i];
+        sort_caso_rcd_freq[i]=freq_access_chunk[orig_index];
 
-  printf("caso_analyze_time=%.6lf\n", ed_tm.tv_sec-bg_tm.tv_sec+(ed_tm.tv_usec-bg_tm.tv_usec)*1.0/1000000);
+    }
 
-  double *caso_time, *striping_time;
-  double f=0, g=0;
-  
-  caso_time=&f;
-  striping_time=&g; 
+    gettimeofday(&bg_tm, NULL);
 
-  /* ========== Perform partial stripe writes ========= */
-  printf("+++++++++ partial stripe writes test +++++++++\n");
-  psw_time_caso(argv[1],begin_timestamp, caso_time);
-  clean_cache();
-  psw_time_striping(argv[1], begin_timestamp, striping_time);
-  clean_cache();
-  //psw_time_continugous(argv[1], begin_timestamp,continugous_time);
+    caso_stripe_ognztn(argv[1], analyze_chunks_time_slots, num_chunk_per_timestamp, begin_timestamp_num, sort_caso_rcd_pattern, sort_caso_rcd_index, sort_caso_rcd_freq);
 
-  /* ========== Perform degraded reads ========= */
-  int *caso_num_extra_io;
-  int c=0;
-  caso_num_extra_io=&c;
+    gettimeofday(&ed_tm, NULL);
 
-  int *striping_num_extra_io;
-  int d=0;
-  striping_num_extra_io=&d;
+    printf("caso_analyze_time=%.6lf\n", ed_tm.tv_sec-bg_tm.tv_sec+(ed_tm.tv_usec-bg_tm.tv_usec)*1.0/1000000);
 
-  //printf("+++++++++ degraded read test +++++++++\n");
-  //dr_time_caso(argv[1], begin_timestamp, caso_num_extra_io, caso_time); 
-  //dr_time_striping(argv[1], begin_timestamp, striping_num_extra_io, striping_time);
-  //dr_time_continugous(argv[1], begin_timestamp, continugous_num_extra_io, continugous_time);
+    double *caso_time, *striping_time;
+    double f=0, g=0;
+
+    caso_time=&f;
+    striping_time=&g; 
+
+    /* ========== Perform partial stripe writes ========= */
+    printf("+++++++++ partial stripe writes test +++++++++\n");
+    psw_time_caso(argv[1],begin_timestamp, caso_time);
+    clean_cache();
+    psw_time_striping(argv[1], begin_timestamp, striping_time);
+    clean_cache();
+    //psw_time_continugous(argv[1], begin_timestamp,continugous_time);
+
+    /* ========== Perform degraded reads ========= */
+    int *caso_num_extra_io;
+    int c=0;
+    caso_num_extra_io=&c;
+
+    int *striping_num_extra_io;
+    int d=0;
+    striping_num_extra_io=&d;
+
+    //printf("+++++++++ degraded read test +++++++++\n");
+    //dr_time_caso(argv[1], begin_timestamp, caso_num_extra_io, caso_time); 
+    //dr_time_striping(argv[1], begin_timestamp, striping_num_extra_io, striping_time);
+    //dr_time_continugous(argv[1], begin_timestamp, continugous_num_extra_io, continugous_time);
 
 #if debug
-  printf("after_sort: ognzd_crrltd_chnk\n");
-  print_matrix(sort_ognzd_crrltd_chnk, ognz_crrltd_cnt, 1);
+    printf("after_sort: ognzd_crrltd_chnk\n");
+    print_matrix(sort_ognzd_crrltd_chnk, ognz_crrltd_cnt, 1);
 
-  printf("after_sort: ognzd_crrltd_chnk_index\n");
-  print_matrix(sort_ognzd_crrltd_chnk_index, ognz_crrltd_cnt, 1);
+    printf("after_sort: ognzd_crrltd_chnk_index\n");
+    print_matrix(sort_ognzd_crrltd_chnk_index, ognz_crrltd_cnt, 1);
 
-  printf("after_sort: ognzd_crrltd_chnk_lg\n");
-  for(i=0; i<ognz_crrltd_cnt; i++)
-	  printf("%d ",ognzd_crrltd_chnk_lg[i]);
-  printf("\n");
+    printf("after_sort: ognzd_crrltd_chnk_lg\n");
+    for(i=0; i<ognz_crrltd_cnt; i++)
+        printf("%d ",ognzd_crrltd_chnk_lg[i]);
+    printf("\n");
 #endif
 
-  free(num_chunk_per_timestamp);
-  free(analyze_chunks_time_slots);
-  free(sort_caso_rcd_pattern);
-  free(sort_caso_rcd_index);
-  free(access_time_slots_index);
-  free(sort_caso_rcd_freq);
-  free(sort_ognzd_crrltd_chnk);
-  free(sort_ognzd_crrltd_chnk_index);
-  free(ognzd_crrltd_chnk_lg);
-  free(ognzd_crrltd_chnk_id_stripe);
+    free(num_chunk_per_timestamp);
+    free(analyze_chunks_time_slots);
+    free(sort_caso_rcd_pattern);
+    free(sort_caso_rcd_index);
+    free(access_time_slots_index);
+    free(sort_caso_rcd_freq);
+    free(sort_ognzd_crrltd_chnk);
+    free(sort_ognzd_crrltd_chnk_index);
+    free(ognzd_crrltd_chnk_lg);
+    free(ognzd_crrltd_chnk_id_stripe);
 
-  return 0;
+    return 0;
 
 }
 
