@@ -23,9 +23,7 @@ extern void system_partial_stripe_writes(int *io_matrix, int *accessed_stripes, 
 
 extern int psw_time_caso(char *trace_name, char given_timestamp[], double *time);
 
-extern int psw_time_striping(char *trace_name, char given_timestamp[], double *time);
-
-extern int psw_time_continugous(char *trace_name, char given_timestamp[], double *time);
+extern int psw_time_bso(char *trace_name, char given_timestamp[], double *time);
 
 extern void degraded_reads(int *io_request, int *stripe_id_array, int stripe_count, int *num_extra_io, int if_continugous, int num_disk_stripe);
 
@@ -33,9 +31,7 @@ extern void system_parallel_reads(int *io_matrix, int *accessed_stripes, int str
 
 extern void dr_time_caso(char *trace_name, char given_timestamp[], int *num_extra_io, double *time);
 
-extern void dr_time_striping(char *trace_name, char given_timestamp[], int *num_extra_io, double *time);
-
-extern void dr_time_continugous(char *trace_name, char given_timestamp[], int *num_extra_io, double *time);
+extern void dr_time_bso(char *trace_name, char given_timestamp[], int *num_extra_io, double *time);
 
 extern void sorting_trace_access_pattern();
 

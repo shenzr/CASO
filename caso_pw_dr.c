@@ -31,8 +31,6 @@ int main(int argc, char *argv[]){
     num_timestamp=0;
     max_access_chunks_per_timestamp=-1;
     num_rele_chunks=0;
-
-    crlltn_hit_ratio=0;
     aver_read_size=0;
 
     /* ====== judge the input code_type ======*/
@@ -122,9 +120,8 @@ int main(int argc, char *argv[]){
     printf("+++++++++ partial stripe writes test +++++++++\n");
     psw_time_caso(argv[1],begin_timestamp, caso_time);
     clean_cache();
-    psw_time_striping(argv[1], begin_timestamp, striping_time);
+    psw_time_bso(argv[1], begin_timestamp, striping_time);
     clean_cache();
-    //psw_time_continugous(argv[1], begin_timestamp,continugous_time);
 
     /* ========== Perform degraded reads ========= */
     int *caso_num_extra_io;
@@ -136,9 +133,10 @@ int main(int argc, char *argv[]){
     striping_num_extra_io=&d;
 
     //printf("+++++++++ degraded read test +++++++++\n");
-    //dr_time_caso(argv[1], begin_timestamp, caso_num_extra_io, caso_time); 
-    //dr_time_striping(argv[1], begin_timestamp, striping_num_extra_io, striping_time);
-    //dr_time_continugous(argv[1], begin_timestamp, continugous_num_extra_io, continugous_time);
+    dr_time_caso(argv[1], begin_timestamp, caso_num_extra_io, caso_time); 
+	clean_cache();
+    dr_time_bso(argv[1], begin_timestamp, striping_num_extra_io, striping_time);
+	clean_cache();
 
 #if debug
     printf("after_sort: ognzd_crrltd_chnk\n");
