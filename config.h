@@ -10,17 +10,19 @@
 #define block_size 4096 // assume that the block size is 4KB
 
 /* parameters for data correlation analysis */
+/* Note: we may allocate large arraies based on these global variables, which will consume memory space based on the values 
+         of the global variables. We can adjust the analysis granularity (i.e., max_num_peer_chunks and max_num_correlated_chunks_per_chunk) 
+         based on the memory space on the machine */
 #define inf 999999999
-#define max_aces_blk_num 1000000               // the strict accessed blocks in a trace (a block may appear more than twice)
-#define max_num_peer_chunks 5000               // we call the chunks that are accessed within a timestamp peer chunks
-#define max_num_relevent_chunks_per_chunk 5000 // it defines the maximum number of relevant chunks to a chunk
-#define num_assume_timestamp 1000000           // the maximum number of timestamps assumed in the analysis
-#define tm_dstnc_odr 4                         // it defines the time distance (i.e., four orders of magnitude of the windows filetime) for correlation analysis
+#define max_aces_blk_num 1000000                  // the strict accessed blocks in a trace (a block may appear more than twice)
+#define max_num_peer_chunks 5000                  // we call the chunks that are accessed within a timestamp peer chunks
+#define max_num_correlated_chunks_per_chunk 5000  // it defines the maximum number of correlated chunks to a chunk
+#define num_assume_timestamp 1000000              // the maximum number of timestamps assumed in the analysis
+#define tm_dstnc_odr 4                            // it defines the time distance (i.e., four orders of magnitude of the windows filetime) for correlation analysis
 
 /* other macro definitions*/
 #define bucket_depth 2000         
-#define IF_LRC 0
-#define contiguous_block 1024*16 // it defines the number of blocks in a column of a stripe under contiguous data placement
+#define contiguous_block 1024*16       // it defines the number of blocks in a column of a stripe under contiguous data placement
 #define clean_cache_read_block_num 100 // it defines the number of blocks read for cleaning cache in the main memory
 #define debug 0
 
@@ -35,15 +37,13 @@ int cur_rcd_idx;                        // it records the number of access block
 int caso_rcd_idx;                       // it records the number of accessed chunks in correlation analysis
 int total_access_chunk_num;             // it records the number accessed in all the patterns
 int num_timestamp;                      // it records the number of timestamp in a trace
-int num_rele_chunks;                    // it records the number of relevant chunks in the trace
 int ognz_crrltd_cnt;                    // number of correlated chunks that are organized
 int total_num_req;
 double aver_read_size;
 
 char code_type[5];                      // it records the code used (either reed-solomon codes or local construction codes)
-
-int* sort_ognzd_crrltd_chnk_index;      // denote the index of correlated chunks in ognzd_crrltd_chnk
-int* sort_ognzd_crrltd_chnk;            // record the sorted correlated chunks that are organized into correlated stripes
+int* sort_ognzd_crrltd_chnk_index;      // it denotes the index of correlated chunks in ognzd_crrltd_chnk
+int* sort_ognzd_crrltd_chnk;            // it records the sorted correlated chunks that are organized into correlated stripes
 int* ognzd_crrltd_chnk_lg;              // the local group of correlated chunks in lrc 
 int* ognzd_crrltd_chnk_id_stripe;       // the chunk_id_stripe of correlated chunks
 

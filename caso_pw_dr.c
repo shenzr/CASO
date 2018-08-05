@@ -30,11 +30,9 @@ int main(int argc, char *argv[]){
     total_access_chunk_num=0;
     num_timestamp=0;
     max_access_chunks_per_timestamp=-1;
-    num_rele_chunks=0;
     aver_read_size=0;
 
-    /* ====== judge the input code_type ======*/
-
+    // judge the input code: reed-solomon codes or local reconstruction code
     if(strcmp(code_type, "rs")!=0 && strcmp(code_type, "lrc")!=0){
 
         printf("ERR: input code_type should be 'rs' or 'lrc' \n");
@@ -48,15 +46,16 @@ int main(int argc, char *argv[]){
     else if(strcmp(code_type, "lrc")==0)
         printf("\n======== trace=%s, LRC(%d,2,%d) ========\n", argv[1], erasure_k, erasure_m);
 
-    struct timeval bg_tm, ed_tm;
-
+    // initialize the global variables
     memset(access_bucket, -1, sizeof(int)*max_aces_blk_num);
     memset(order_access_bucket, 0, sizeof(int)*max_aces_blk_num);
     memset(trace_access_pattern, -1, sizeof(int)*max_aces_blk_num);
     memset(freq_access_chunk, 0, sizeof(int)*max_aces_blk_num);
 
+    // process the trace 
     calculate_chunk_num(argv[1]);
 
+    // calculate the number of data chunks which are accessed no less than twice during the trace 
     int count_larger_2=0;
     count=0;
     for(i=0;i<cur_rcd_idx;i++){
@@ -66,24 +65,26 @@ int main(int argc, char *argv[]){
         }
     }
 
-    // calculate the partial stripe writes io 
+    // based on the analysis ratio, calculate the number of time distance for analysis
     begin_timestamp_num=begin_stripe_ratio*num_timestamp;
 
-    // determine the begin_timestamp
+    // determine the begin_timestamp 
+    // The requests before the begin time window are used for correlation analysis, while those after the begin time window are used for performance validation 
     char begin_timestamp[100];
     determine_begin_timestamp(argv[1], begin_timestamp, begin_timestamp_num);
 
+    // calculate the number of chunks which are used for analysis and are accessed no less than twice during the correlation analysis
     count=0;
     for(i=0; i<caso_rcd_idx; i++)
         if(freq_access_chunk[i]>=2)
             count++;
 
-    int* analyze_chunks_time_slots=(int*)malloc(sizeof(int)*begin_timestamp_num*max_access_chunks_per_timestamp);// record all the accessed blocks at every timestamp
-    int* access_time_slots_index=(int*)malloc(sizeof(int)*begin_timestamp_num*max_access_chunks_per_timestamp); // it records the index of each chunk of total_access in the trace_access_pattern
-    int* num_chunk_per_timestamp=(int*)malloc(sizeof(int)*begin_timestamp_num);  // it records the number of accessed chunks in every timestamp before erasure coding
-    int* sort_caso_rcd_pattern=(int*)malloc(sizeof(int)*caso_rcd_idx); //it records the sorted values of the data for correlation analysis in CASO
-    int* sort_caso_rcd_index=(int*)malloc(sizeof(int)*caso_rcd_idx);
-    int* sort_caso_rcd_freq=(int*)malloc(sizeof(int)*caso_rcd_idx);
+    int* analyze_chunks_time_slots=(int*)malloc(sizeof(int)*begin_timestamp_num*max_access_chunks_per_timestamp);   // it records  all the accessed blocks at every time windows for correlation analysis
+    int* access_time_slots_index=(int*)malloc(sizeof(int)*begin_timestamp_num*max_access_chunks_per_timestamp);     // it records the index of each chunk of total_access in the trace_access_pattern
+    int* num_chunk_per_timestamp=(int*)malloc(sizeof(int)*begin_timestamp_num);                                     // it records the number of accessed chunks in every time window before correlation analysis
+    int* sort_caso_rcd_pattern=(int*)malloc(sizeof(int)*caso_rcd_idx);                                              // it records the sorted data chunks for correlation analysis in CASO
+    int* sort_caso_rcd_index=(int*)malloc(sizeof(int)*caso_rcd_idx);                                                // it records the original index of the data chunks before being sorted 
+    int* sort_caso_rcd_freq=(int*)malloc(sizeof(int)*caso_rcd_idx);                                                 // it records the access frequencies of the sorted data chunks 
 
     int orig_index;
 
@@ -102,13 +103,9 @@ int main(int argc, char *argv[]){
 
     }
 
-    gettimeofday(&bg_tm, NULL);
-
+    // organize the data chunks by using CASO
     caso_stripe_ognztn(argv[1], analyze_chunks_time_slots, num_chunk_per_timestamp, begin_timestamp_num, sort_caso_rcd_pattern, sort_caso_rcd_index, sort_caso_rcd_freq);
 
-    gettimeofday(&ed_tm, NULL);
-
-    printf("caso_analyze_time=%.6lf\n", ed_tm.tv_sec-bg_tm.tv_sec+(ed_tm.tv_usec-bg_tm.tv_usec)*1.0/1000000);
 
     double *caso_time, *striping_time;
     double f=0, g=0;
@@ -137,19 +134,6 @@ int main(int argc, char *argv[]){
 	clean_cache();
     dr_time_bso(argv[1], begin_timestamp, striping_num_extra_io, striping_time);
 	clean_cache();
-
-#if debug
-    printf("after_sort: ognzd_crrltd_chnk\n");
-    print_matrix(sort_ognzd_crrltd_chnk, ognz_crrltd_cnt, 1);
-
-    printf("after_sort: ognzd_crrltd_chnk_index\n");
-    print_matrix(sort_ognzd_crrltd_chnk_index, ognz_crrltd_cnt, 1);
-
-    printf("after_sort: ognzd_crrltd_chnk_lg\n");
-    for(i=0; i<ognz_crrltd_cnt; i++)
-        printf("%d ",ognzd_crrltd_chnk_lg[i]);
-    printf("\n");
-#endif
 
     free(num_chunk_per_timestamp);
     free(analyze_chunks_time_slots);
