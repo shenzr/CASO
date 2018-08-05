@@ -29,9 +29,9 @@ extern void degraded_reads(int *io_request, int *stripe_id_array, int stripe_cou
 
 extern void system_parallel_reads(int *io_matrix, int *accessed_stripes, int stripe_count, int *total_write_block_num);
 
-extern void dr_time_caso(char *trace_name, char given_timestamp[], int *num_extra_io, double *time);
+extern void dr_io_caso(char *trace_name, char given_timestamp[], int *num_extra_io, double *time);
 
-extern void dr_time_bso(char *trace_name, char given_timestamp[], int *num_extra_io, double *time);
+extern void dr_io_bso(char *trace_name, char given_timestamp[], int *num_extra_io, double *time);
 
 extern void sorting_trace_access_pattern();
 
