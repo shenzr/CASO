@@ -7,5 +7,5 @@ default:
 	$(CC) $(CFLAGS) -c general.c -o general.o 
 
 	@echo "Compile partial_stripe_writes.c"
-	$(CC) $(CFLAGS) -o caso_pw_dr caso_pw_dr.c general.o Jerasure/galois.o Jerasure/reed_sol.o Jerasure/jerasure.o 
+	$(CC) $(CFLAGS) -o caso_test caso_test.c general.o Jerasure/galois.o Jerasure/reed_sol.o Jerasure/jerasure.o 
 

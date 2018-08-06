@@ -9,6 +9,9 @@
 #define erasure_w 8     // the value of w to configure the arthmetic on the finite field 
 #define block_size 4096 // assume that the block size is 4KB
 
+/* parameters of testbed */ 
+#define num_disks 15    // number of disks used in our testbed experiment. Make sure that num_disks >= erasure_k + erasure_m + num_lg
+
 /* parameters for data correlation analysis */
 /* Note: we may allocate large arraies based on these global variables, which will consume memory space based on the values 
          of the global variables. We can adjust the analysis granularity (i.e., max_num_peer_chunks and max_num_correlated_chunks_per_chunk) 
@@ -64,5 +67,10 @@ typedef struct _search_info{
 	int num_crrltd_chnk_bf_chnk_id;
 
 }SEARCH_INFO;
+
+// record the disk identities of a disk array
+char *disk_array[num_disks]={"/dev/sde","/dev/sdf","/dev/sdg","/dev/sdh","/dev/sdi","/dev/sdj","/dev/sdk","/dev/sdl","/dev/sdm","/dev/sdn",
+	"/dev/sdo","/dev/sdp","/dev/sdq","/dev/sdr", "/dev/sds"};
+
 
 #endif

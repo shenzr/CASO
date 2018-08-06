@@ -113,8 +113,7 @@ int main(int argc, char *argv[]){
     caso_time=&f;
     striping_time=&g; 
 
-    /* ========== Perform partial stripe writes ========= */
-    printf("+++++++++ partial stripe writes test +++++++++\n");
+    printf("\n+++++++++ partial stripe writes test +++++++++\n");
     psw_time_caso(argv[1],begin_timestamp, caso_time);
     clean_cache();
     psw_time_bso(argv[1], begin_timestamp, striping_time);
@@ -129,11 +128,9 @@ int main(int argc, char *argv[]){
     int d=0;
     striping_num_extra_io=&d;
 
-    //printf("+++++++++ degraded read test +++++++++\n");
-    dr_time_caso(argv[1], begin_timestamp, caso_num_extra_io, caso_time); 
-	clean_cache();
-    dr_time_bso(argv[1], begin_timestamp, striping_num_extra_io, striping_time);
-	clean_cache();
+    printf("\n+++++++++ degraded read test +++++++++\n");
+    dr_io_caso(argv[1], begin_timestamp, caso_num_extra_io, caso_time); 
+    dr_io_bso(argv[1], begin_timestamp, striping_num_extra_io, striping_time);
 
     free(num_chunk_per_timestamp);
     free(analyze_chunks_time_slots);
