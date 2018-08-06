@@ -32,12 +32,12 @@ int main(int argc, char *argv[]){
 	if(strcmp(test_type, "testbed")==0){
 
 		char input_info[5];
-		printf("Please make sure that you have filled the disk info in the config.h file. Yes or No?\n");
+		printf("Please make sure that you have filled the global disk info in the general.c file. Yes or No?\n");
 		scanf("%s", input_info); 
 
 		if(strcmp(input_info, "No")==0){
 
-			printf("please fill the **disk array** info in the config.h file!\n");
+			printf("please fill the **disk array** info in the general.c file first before running testbed experiment!\n");
 			exit(1);
 
 			}
@@ -139,9 +139,15 @@ int main(int argc, char *argv[]){
 
     printf("\n+++++++++ partial stripe writes test +++++++++\n");
     psw_time_caso(argv[1],begin_timestamp, caso_time);
-    clean_cache();
+
+    // clean cache to mitigate the impact of cached items in next testbed experiments
+	if(strcmp(test_type, "testbed")==0)
+		clean_cache();
+	
     psw_time_bso(argv[1], begin_timestamp, striping_time);
-    clean_cache();
+
+	if(strcmp(test_type, "testbed")==0)
+		clean_cache();
 
     /* ========== Perform degraded reads ========= */
     int *caso_num_extra_io;

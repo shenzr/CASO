@@ -29,6 +29,12 @@
 int num_distinct_chunks_timestamp[num_assume_timestamp];
 int poten_crrltd_cnt;
 
+// record the disk identities of a disk array. 
+// You can also specify the directories of the files for simulating parallel reads/writes in this array
+char *disk_array[num_disks]={"/dev/sde","/dev/sdf","/dev/sdg","/dev/sdh","/dev/sdi","/dev/sdj","/dev/sdk","/dev/sdl","/dev/sdm","/dev/sdn",
+	"/dev/sdo","/dev/sdp","/dev/sdq","/dev/sdr", "/dev/sds"};
+
+
 /* This function prints all the elements of a matrix */
 void print_matrix(int* matrix, int len, int width){
 
@@ -2547,7 +2553,7 @@ int psw_time_bso(char *trace_name, char given_timestamp[], double *time){
                 io_count+=lg_count*lg_prty_num;
 
             // perform the system write
-            if(strcmp(test_type, "testbed")){
+            if(strcmp(test_type, "testbed")==0){
 				
                 gettimeofday(&begin_time, NULL);
                 system_partial_stripe_writes(io_request, stripes_per_timestamp, stripe_count);
@@ -2624,7 +2630,7 @@ int psw_time_bso(char *trace_name, char given_timestamp[], double *time){
     }
 
     // perform the write operation in the last time distance 
-    if(strcmp(test_type, "testbed")){
+    if(strcmp(test_type, "testbed")==0){
 		
         gettimeofday(&begin_time, NULL);
         system_partial_stripe_writes(io_request, stripes_per_timestamp, stripe_count);
