@@ -12,6 +12,10 @@
 /* parameters of testbed */ 
 #define num_disks 15    // number of disks used in our testbed experiment. Make sure that num_disks >= erasure_k + erasure_m + num_lg
 
+// record the disk identities of a disk array
+char *disk_array[num_disks]={"/dev/sde","/dev/sdf","/dev/sdg","/dev/sdh","/dev/sdi","/dev/sdj","/dev/sdk","/dev/sdl","/dev/sdm","/dev/sdn",
+	"/dev/sdo","/dev/sdp","/dev/sdq","/dev/sdr", "/dev/sds"};
+
 /* parameters for data correlation analysis */
 /* Note: we may allocate large arraies based on these global variables, which will consume memory space based on the values 
          of the global variables. We can adjust the analysis granularity (i.e., max_num_peer_chunks and max_num_correlated_chunks_per_chunk) 
@@ -44,6 +48,7 @@ int ognz_crrltd_cnt;                    // number of correlated chunks that are 
 int total_num_req;
 double aver_read_size;
 
+char test_type[20];                     // it records the test type: Numerical test or Testbed test
 char code_type[5];                      // it records the code used (either reed-solomon codes or local construction codes)
 int* sort_ognzd_crrltd_chnk_index;      // it denotes the index of correlated chunks in ognzd_crrltd_chnk
 int* sort_ognzd_crrltd_chnk;            // it records the sorted correlated chunks that are organized into correlated stripes
@@ -67,10 +72,6 @@ typedef struct _search_info{
 	int num_crrltd_chnk_bf_chnk_id;
 
 }SEARCH_INFO;
-
-// record the disk identities of a disk array
-char *disk_array[num_disks]={"/dev/sde","/dev/sdf","/dev/sdg","/dev/sdh","/dev/sdi","/dev/sdj","/dev/sdk","/dev/sdl","/dev/sdm","/dev/sdn",
-	"/dev/sdo","/dev/sdp","/dev/sdq","/dev/sdr", "/dev/sds"};
 
 
 #endif

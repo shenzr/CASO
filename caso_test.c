@@ -14,8 +14,8 @@
 
 int main(int argc, char *argv[]){
 
-    if(argc!=4){
-        printf("./s trace_name begin_stripe_ratio code_type!\n");
+    if(argc!=5){
+        printf("Please input: ./caso_test trace_name begin_stripe_ratio code_type(rs or lrc) test_type(numeric or testbed)!\n");
         exit(1);
     }
 
@@ -27,6 +27,30 @@ int main(int argc, char *argv[]){
     /* ===== initialize the parameters ====== */
     begin_stripe_ratio=atoi(argv[2])*1.0/100;
     strcpy(code_type, argv[3]);
+	strcpy(test_type, argv[4]);
+
+	if(strcmp(test_type, "testbed")==0){
+
+		char input_info[5];
+		printf("Please make sure that you have filled the disk info in the config.h file. Yes or No?\n");
+		scanf("%s", input_info); 
+
+		if(strcmp(input_info, "No")==0){
+
+			printf("please fill the **disk array** info in the config.h file!\n");
+			exit(1);
+
+			}
+
+		else if(strcmp(input_info, "Yes")!=0){
+
+			printf("Please input Yes or No!\n");
+			exit(1);
+
+			}
+
+		}
+	
     total_access_chunk_num=0;
     num_timestamp=0;
     max_access_chunks_per_timestamp=-1;

@@ -2303,10 +2303,14 @@ int psw_time_caso(char *trace_name, char given_timestamp[], double *time){
                 io_count+=lg_count*lg_prty_num;
 
             // perform system write
-            gettimeofday(&begin_time, NULL);
-            system_partial_stripe_writes(io_request, stripes_per_timestamp, stripe_count);
-            gettimeofday(&end_time, NULL);
-            *time+=end_time.tv_sec-begin_time.tv_sec+(end_time.tv_usec-begin_time.tv_usec)*1.0/1000000;
+            if(strcmp(test_type, "testbed")==0){
+				
+                gettimeofday(&begin_time, NULL);
+                system_partial_stripe_writes(io_request, stripes_per_timestamp, stripe_count);
+                gettimeofday(&end_time, NULL);
+                *time+=end_time.tv_sec-begin_time.tv_sec+(end_time.tv_usec-begin_time.tv_usec)*1.0/1000000;
+				
+            	}
 
             // re-initialize the io_request array
             memset(io_request, 0, sizeof(int)*max_accessed_stripes*num_disk_stripe);
@@ -2382,17 +2386,26 @@ int psw_time_caso(char *trace_name, char given_timestamp[], double *time){
     }
 
     //for the last operation, add the parity update io
-    gettimeofday(&begin_time, NULL);
-    system_partial_stripe_writes(io_request, stripes_per_timestamp, stripe_count);
-    gettimeofday(&end_time, NULL);
-    *time+=end_time.tv_sec-begin_time.tv_sec+(end_time.tv_usec-begin_time.tv_usec)*1.0/1000000;
+    if(strcmp(test_type, "testbed")==0){
+		
+        gettimeofday(&begin_time, NULL);
+        system_partial_stripe_writes(io_request, stripes_per_timestamp, stripe_count);
+        gettimeofday(&end_time, NULL);
+        *time+=end_time.tv_sec-begin_time.tv_sec+(end_time.tv_usec-begin_time.tv_usec)*1.0/1000000;
+		
+    	}
 
     write_count++;
     io_count+=stripe_count*erasure_m; 
     io_count+=lg_count*lg_prty_num;
 
     //printf("write_count=%d\n", write_count);
-    printf("caso_parity_update_io=%d, caso_partial_stripe_write_time=%.2lf\n", io_count, *time);
+    if(strcmp(test_type,"testbed")==0)
+	    printf("caso_parity_update_io=%d, caso_partial_stripe_write_time=%.2lf\n", io_count, *time);
+
+	else
+		printf("caso_parity_update_io=%d\n", io_count);
+		  
 
     fclose(fp);
     free(stripes_per_timestamp);
@@ -2534,10 +2547,14 @@ int psw_time_bso(char *trace_name, char given_timestamp[], double *time){
                 io_count+=lg_count*lg_prty_num;
 
             // perform the system write
-            gettimeofday(&begin_time, NULL);
-            system_partial_stripe_writes(io_request, stripes_per_timestamp, stripe_count);
-            gettimeofday(&end_time, NULL);
-            *time+=end_time.tv_sec-begin_time.tv_sec+(end_time.tv_usec-begin_time.tv_usec)*1.0/1000000;
+            if(strcmp(test_type, "testbed")){
+				
+                gettimeofday(&begin_time, NULL);
+                system_partial_stripe_writes(io_request, stripes_per_timestamp, stripe_count);
+                gettimeofday(&end_time, NULL);
+                *time+=end_time.tv_sec-begin_time.tv_sec+(end_time.tv_usec-begin_time.tv_usec)*1.0/1000000;
+
+            	}
 
             // re-initialize the stripes_per_timestamp
             memset(io_request, 0, sizeof(int)*max_accessed_stripes*num_disk_stripe);
@@ -2607,17 +2624,25 @@ int psw_time_bso(char *trace_name, char given_timestamp[], double *time){
     }
 
     // perform the write operation in the last time distance 
-    gettimeofday(&begin_time, NULL);
-    system_partial_stripe_writes(io_request, stripes_per_timestamp, stripe_count);
-    gettimeofday(&end_time, NULL);
-    *time+=end_time.tv_sec-begin_time.tv_sec+(end_time.tv_usec-begin_time.tv_usec)*1.0/1000000;
+    if(strcmp(test_type, "testbed")){
+		
+        gettimeofday(&begin_time, NULL);
+        system_partial_stripe_writes(io_request, stripes_per_timestamp, stripe_count);
+        gettimeofday(&end_time, NULL);
+        *time+=end_time.tv_sec-begin_time.tv_sec+(end_time.tv_usec-begin_time.tv_usec)*1.0/1000000;
+
+    	}
 
     write_count++;
     // for the last operation
     io_count+=stripe_count*erasure_m; 
     io_count+=lg_count*lg_prty_num;
 
-    printf("bso_parity_update_io=%d, bso_partial_stripe_write_time=%.2lf\n", io_count, *time);
+    if(strcmp(test_type, "testbed")==0)
+		printf("bso_parity_update_io=%d, bso_partial_stripe_write_time=%.2lf\n", io_count, *time);
+
+	else 
+		printf("bso_parity_update_io=%d\n", io_count);
 
     fclose(fp);
     free(stripes_per_timestamp);
