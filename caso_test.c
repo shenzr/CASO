@@ -136,8 +136,9 @@ int main(int argc, char *argv[]){
 
     }
 
-    // organize the data chunks by using CASO
-    caso_stripe_ognztn(argv[1], analyze_chunks_time_slots, num_chunk_per_timestamp, begin_timestamp_num, sort_caso_rcd_pattern, sort_caso_rcd_index, sort_caso_rcd_freq);
+    // organize the data chunks by using CASO only if there exist correlated data chunks
+	if(caso_rcd_idx>0)
+		caso_stripe_ognztn(argv[1], analyze_chunks_time_slots, num_chunk_per_timestamp, begin_timestamp_num, sort_caso_rcd_pattern, sort_caso_rcd_index, sort_caso_rcd_freq);
 
 
     double *caso_time, *striping_time;

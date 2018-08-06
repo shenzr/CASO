@@ -269,6 +269,7 @@ int binary_search(int array[], int num, int value){
 
         else if(array[mid]==value)
             break;
+		
     }
 
     return mid;
@@ -378,6 +379,7 @@ void calculate_chunk_num(char *trace_name){
     int temp_count;
     int if_begin;
     int ret;
+	int write_flag;
 
     long long *size_int;
     long long *offset_int;
@@ -391,6 +393,7 @@ void calculate_chunk_num(char *trace_name){
     temp_count=0;
     num_distict_chunks_per_timestamp=0;
     if_begin=1;
+	write_flag=0;
 
     // the max_access_chunks_per_timestamp is not the exact value, it did not consider the multiple accesses 
     // to a chunk within a timestamp
@@ -439,7 +442,10 @@ void calculate_chunk_num(char *trace_name){
         access_end_block=(*offset_int+*size_int-1)/block_size;
         total_access_chunk_num += access_end_block - access_start_block + 1;
 
-        //if it is the begining of the first pattern of a timestamp, then collect the info of the last timestamp
+		// update the flag indicating that the time distance has write requests
+		write_flag=1;
+
+        //if it is the begining of the first pattern of a time distance, then collect the info of the last timestamp
         if(strcmp(pre_timestamp, round_timestamp)!=0){
 
             //if it is a new timestamp, then copy it to the pre_timestamp
@@ -456,6 +462,7 @@ void calculate_chunk_num(char *trace_name){
                     max_access_chunks_per_timestamp=temp_count;
 
                 num_timestamp++;
+				write_flag=0;
 
                 if(num_timestamp>=num_assume_timestamp){
                     printf("ERR: num_timestamp>=num_assume_timestamp!\n");
@@ -507,7 +514,10 @@ void calculate_chunk_num(char *trace_name){
         max_access_chunks_per_timestamp=temp_count;
 
     num_distinct_chunks_timestamp[num_timestamp]=num_distict_chunks_per_timestamp;
-    num_timestamp++;
+
+	// if the last time distance has write update operations 
+	if(write_flag==1)
+		num_timestamp++;
 
     fclose(fp);
 
@@ -535,6 +545,7 @@ void determine_begin_timestamp(char *trace_name, char begin_timestamp[], int beg
 
     int temp_count=0;
     int if_begin=1;
+	int write_flag;
 
     caso_rcd_idx=0;
 
@@ -550,6 +561,7 @@ void determine_begin_timestamp(char *trace_name, char begin_timestamp[], int beg
             continue;
 
         process_timestamp(orig_timestamp, round_timestamp);
+		write_flag=1;
 
         // calculate the numeber of timestamp
         if(strcmp(pre_timestamp, round_timestamp)!=0){
@@ -558,20 +570,34 @@ void determine_begin_timestamp(char *trace_name, char begin_timestamp[], int beg
 
                 caso_rcd_idx+=num_distinct_chunks_timestamp[temp_count];
                 temp_count++;
-
-                if(temp_count==begin_timestamp_num){
-
-                    strcpy(begin_timestamp, round_timestamp);
-                    break;
-
-                }
+				write_flag=0;
+				
             }
 
-            else if_begin=0;
+            else
+				if_begin=0;
 
             strcpy(pre_timestamp, round_timestamp);
+
+            // check if it reaches the number of analyzed time distance
+		    if(temp_count==begin_timestamp_num){
+		
+			    strcpy(begin_timestamp, round_timestamp);
+			    break;
+		
+		    }
         }
     }
+
+	// for the timestamp in the last access pattern 
+	if(write_flag==1){
+		
+		temp_count++;
+
+		if(temp_count==begin_timestamp_num)
+			strcpy(begin_timestamp, round_timestamp);
+			
+		}
 
     fclose(fp);
 
@@ -943,6 +969,16 @@ void find_max_crrltd_chnk_udr_bundry(int chunk_id, SEARCH_INFO* si){
     end=ognz_crrltd_cnt-1;
     mid=start+(end-start)/2;
 
+    // if there is no correlated chunks
+	if(start > end){
+
+		si->search_flag=0;
+		si->num_crrltd_chnk_bf_chnk_id=0;
+
+		return;
+		
+		}
+
     // if the smallest correlated data chunk is larger than the chunk_id
     if(sort_ognzd_crrltd_chnk[ognz_crrltd_cnt-1] > chunk_id){
 
@@ -1012,7 +1048,6 @@ void find_max_crrltd_chnk_udr_bundry(int chunk_id, SEARCH_INFO* si){
         exit(1);
 
     }
-
 }
 
 
@@ -1570,8 +1605,10 @@ void caso_stripe_ognztn(char *trace_name,  int *analyze_chunks_time_slots, int *
                 num_chunk_per_timestamp[count_timestamp]=cur_index;
                 cur_index=0; 
                 count_timestamp++;
-
-                if(count_timestamp==bgn_tmstmp_num) 
+				
+                // the trace replay will start at the timestamp with the order of bgn_tmstamp_num
+                // so the correlation analysis ends at the timestamp with the order of bgn_tmstamp_num-1
+                if(count_timestamp==bgn_tmstmp_num-1) 
                     break;
             }
 
@@ -2251,12 +2288,14 @@ int psw_time_caso(char *trace_name, char given_timestamp[], double *time){
     int lg_id, lg_count=0;
     int write_stripe_cnt;
     int updt_chnk_cnt;
+	int if_begin;
 
     stripe_count=0;
     write_count=0;
     lg_id=-1;
     write_stripe_cnt=0;
     updt_chnk_cnt=0;
+	if_begin=1;
 
     //initialize the pre_timestamp as the given timestamp
     strcpy(pre_timestamp, given_timestamp);
@@ -2304,43 +2343,49 @@ int psw_time_caso(char *trace_name, char given_timestamp[], double *time){
         // if it is a request in a new timedistance 
         if(strcmp(pre_timestamp, round_timestamp)!=0){
 
-            // calculate the partial stripe writes in the last time distance 
-            io_count+=stripe_count*erasure_m;
+			if(if_begin==0){
 
-            // for LRC, we should calculate the updates to local parity chunks 
-            if(strcmp(code_type, "lrc")==0)
-                io_count+=lg_count*lg_prty_num;
+                // calculate the partial stripe writes in the last time distance 
+                io_count+=stripe_count*erasure_m;
 
-            // perform system write
-            if(strcmp(test_type, "testbed")==0){
+                // for LRC, we should calculate the updates to local parity chunks 
+                if(strcmp(code_type, "lrc")==0)
+					io_count+=lg_count*lg_prty_num;
+
+                // perform system write
+                if(strcmp(test_type, "testbed")==0){
 				
-                gettimeofday(&begin_time, NULL);
-                system_partial_stripe_writes(io_request, stripes_per_timestamp, stripe_count);
-                gettimeofday(&end_time, NULL);
-                *time+=end_time.tv_sec-begin_time.tv_sec+(end_time.tv_usec-begin_time.tv_usec)*1.0/1000000;
+                    gettimeofday(&begin_time, NULL);
+                    system_partial_stripe_writes(io_request, stripes_per_timestamp, stripe_count);
+                    gettimeofday(&end_time, NULL);
+                    *time+=end_time.tv_sec-begin_time.tv_sec+(end_time.tv_usec-begin_time.tv_usec)*1.0/1000000;
 				
-            	}
+            	    }
 
-            // re-initialize the io_request array
-            memset(io_request, 0, sizeof(int)*max_accessed_stripes*num_disk_stripe);
-            memset(stripes_per_timestamp, -1, sizeof(int)*max_accessed_stripes);
-            memset(lg_per_tmstmp, 0, sizeof(int)*max_accessed_stripes*num_lg);
+                // re-initialize the io_request array
+                memset(io_request, 0, sizeof(int)*max_accessed_stripes*num_disk_stripe);
+                memset(stripes_per_timestamp, -1, sizeof(int)*max_accessed_stripes);
+                memset(lg_per_tmstmp, 0, sizeof(int)*max_accessed_stripes*num_lg);
 
-            if(stripe_count>=max_accessed_stripes){
-                printf("ERR: max_accessed_stripes error!\n");
-                exit(1);
-            }
+                if(stripe_count>=max_accessed_stripes){
+                    printf("ERR: max_accessed_stripes error!\n");
+                    exit(1);
+                }
 
-            write_stripe_cnt+=stripe_count;
+                write_stripe_cnt+=stripe_count;
 
-            // re-initialize the stripe_count
-            stripe_count=0;
-            lg_count=0;
-            updt_chnk_cnt=0;
+                // re-initialize the stripe_count
+                stripe_count=0;
+                lg_count=0;
+                updt_chnk_cnt=0;
 
-            strcpy(pre_timestamp, round_timestamp); 
+                write_count++;
+				}
 
-            write_count++;
+			else 
+				if_begin=0;
+
+			strcpy(pre_timestamp, round_timestamp); 
 
         }
 
@@ -2500,6 +2545,7 @@ int psw_time_bso(char *trace_name, char given_timestamp[], double *time){
     int num_chnk_per_lg; 
     int write_stripe_cnt;
     int updt_chnk_cnt;
+	int if_begin;
 
     lg_id=-1;
     stripe_count=0;
@@ -2507,6 +2553,7 @@ int psw_time_bso(char *trace_name, char given_timestamp[], double *time){
     write_stripe_cnt=0;
     num_chnk_per_lg=erasure_k/num_lg;
     updt_chnk_cnt=0;
+	if_begin=1;
 
     //initialize the pre_timestamp as the given timestamp
     strcpy(pre_timestamp, given_timestamp);
@@ -2548,39 +2595,46 @@ int psw_time_bso(char *trace_name, char given_timestamp[], double *time){
         // if it is a request in a new timedistance
         if(strcmp(pre_timestamp, round_timestamp)!=0){
 
-            // calculate the partial stripe writes in the last timestamp
-            io_count+=stripe_count*erasure_m;
-
-            // record the update to local parity for LRC
-            if(strcmp(code_type, "lrc")==0)
-                io_count+=lg_count*lg_prty_num;
-
-            // perform the system write
-            if(strcmp(test_type, "testbed")==0){
+            // if it is not the first time distance 
+            if(if_begin==0){
 				
-                gettimeofday(&begin_time, NULL);
-                system_partial_stripe_writes(io_request, stripes_per_timestamp, stripe_count);
-                gettimeofday(&end_time, NULL);
-                *time+=end_time.tv_sec-begin_time.tv_sec+(end_time.tv_usec-begin_time.tv_usec)*1.0/1000000;
+                // calculate the partial stripe writes in the last timestamp
+                io_count+=stripe_count*erasure_m;
 
+                // record the update to local parity for LRC
+                if(strcmp(code_type, "lrc")==0)
+                    io_count+=lg_count*lg_prty_num;
+
+                // perform the system write
+                if(strcmp(test_type, "testbed")==0){
+				
+                    gettimeofday(&begin_time, NULL);
+                    system_partial_stripe_writes(io_request, stripes_per_timestamp, stripe_count);
+                    gettimeofday(&end_time, NULL);
+                    *time+=end_time.tv_sec-begin_time.tv_sec+(end_time.tv_usec-begin_time.tv_usec)*1.0/1000000;
+
+            	    }
+
+                // re-initialize the stripes_per_timestamp
+                memset(io_request, 0, sizeof(int)*max_accessed_stripes*num_disk_stripe);
+                memset(stripes_per_timestamp, -1, sizeof(int)*max_accessed_stripes);
+                memset(lg_per_tmstmp, 0, sizeof(int)*max_accessed_stripes*num_lg);
+
+                write_stripe_cnt+=stripe_count;
+
+                // record the current involved stripes in this operation
+                stripe_count=0;
+                lg_count=0;
+                updt_chnk_cnt=0;
+
+                count++;
+                write_count++;
             	}
 
-            // re-initialize the stripes_per_timestamp
-            memset(io_request, 0, sizeof(int)*max_accessed_stripes*num_disk_stripe);
-            memset(stripes_per_timestamp, -1, sizeof(int)*max_accessed_stripes);
-            memset(lg_per_tmstmp, 0, sizeof(int)*max_accessed_stripes*num_lg);
+			else 
+				if_begin=0;
 
-            write_stripe_cnt+=stripe_count;
-
-            // record the current involved stripes in this operation
-            stripe_count=0;
-            lg_count=0;
-            updt_chnk_cnt=0;
-
-            strcpy(pre_timestamp, round_timestamp);
-
-            count++;
-            write_count++;
+			strcpy(pre_timestamp, round_timestamp); 
 
         }
 
@@ -2643,6 +2697,7 @@ int psw_time_bso(char *trace_name, char given_timestamp[], double *time){
     	}
 
     write_count++;
+	
     // for the last operation
     io_count+=stripe_count*erasure_m; 
     io_count+=lg_count*lg_prty_num;
@@ -2664,7 +2719,7 @@ int psw_time_bso(char *trace_name, char given_timestamp[], double *time){
 
 /* perform degraded reads when a single disk is temporal unavaialble. Spacifically, we will use the global parity chunks to repair 
    an unavailable chunk for reed-solomon codes. While for LRC, we will utilize its local parity chunk. */
-void degraded_reads(int *io_request, int *stripe_id_array, int stripe_count, int if_continugous, int num_disk_stripe){
+void degraded_reads(int *io_request, int *stripe_id_array, int stripe_count, int num_disk_stripe){
 
     int i, j; 
     int k;
@@ -2694,11 +2749,7 @@ void degraded_reads(int *io_request, int *stripe_id_array, int stripe_count, int
             if(io_request[i*num_disk_stripe+j]==-1){
 
                 temp_stripe=stripe_id_array[i];
-
-                if(if_continugous==0)
-                    temp_rotation=temp_stripe%num_disk_stripe;
-                else 
-                    temp_rotation=0;
+                temp_rotation=temp_stripe%num_disk_stripe;
 
                 // calculate the number of elements to be read currently 
                 if(strcmp(code_type, "rs")==0){
@@ -2907,7 +2958,7 @@ void dr_io_caso(char *trace_name, char given_timestamp[], int *num_extra_io, dou
             total_access_stripes+=stripe_count;
 
             // check if the read is degraded read 
-            degraded_reads(io_request, stripes_per_timestamp, stripe_count, 0, num_disk_stripe);            
+            degraded_reads(io_request, stripes_per_timestamp, stripe_count, num_disk_stripe);            
 
             io_count+=calculate_num_io(io_request, stripe_count, num_disk_stripe);
             extra_io_count=calculate_extra_io(io_request, stripe_count, num_disk_stripe);
@@ -3099,7 +3150,7 @@ void dr_io_bso(char *trace_name, char given_timestamp[], int *num_extra_io, doub
 #endif
 
             // perform degraded reads
-            degraded_reads(io_request, stripes_per_timestamp, stripe_count, 0, num_disk_stripe);
+            degraded_reads(io_request, stripes_per_timestamp, stripe_count, num_disk_stripe);
 
             io_count+=calculate_num_io(io_request, stripe_count, num_disk_stripe);
             extra_io_count=calculate_extra_io(io_request, stripe_count, num_disk_stripe);
