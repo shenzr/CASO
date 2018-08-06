@@ -1650,14 +1650,6 @@ void caso_stripe_ognztn(char *trace_name,  int *analyze_chunks_time_slots, int *
         }
     }
 
-#if debug
-    printf("analyze_chunks_time_slots:\n");
-    print_matrix(analyze_chunks_time_slots, max_access_chunks_per_timestamp, bgn_tmstmp_num);
-
-    printf("analyze trace finishes\n");
-    printf("caso_rcd_idx=%d, max_num_peer_chunks=%d\n", caso_rcd_idx, max_num_peer_chunks);
-#endif
-
     // calculate the number of data chunks that are accessed more than twice in the caso analysis period
     int* caso_poten_crrltd_chks=(int*)malloc(sizeof(int)*caso_rcd_idx);
 
@@ -1794,10 +1786,6 @@ void quick_sort_value(int *data, int left, int right){
 
     data[p] = temp;
 
-    ////printf{""}
-    //for(i=left;i<=right;i++) //printf("%d ",index[i]);
-    ////printf("\n");
-
     if(p - left > 1)
         quick_sort_value(data,left, p-1);
     if(right - p > 1)
@@ -1857,12 +1845,6 @@ void system_partial_stripe_writes(int *io_matrix, int *accessed_stripes, int str
 
     // count the io amount
     io_amount=calculate_chunk_num_io_matrix(io_matrix, stripe_count, num_disk_stripe);
-
-#if debug
-    printf("\nio_matrix:\n");
-    print_matrix(io_matrix, num_disk_stripe, stripe_count);
-#endif
-
 
     // record the start point and end point for each i/o
     struct aiocb* aio_list = (struct aiocb*)malloc(sizeof(struct aiocb)*io_amount);
@@ -1929,11 +1911,6 @@ void system_partial_stripe_writes(int *io_matrix, int *accessed_stripes, int str
             print_matrix(accessed_stripes, stripe_count, 1);
         }
     }
-
-#if debug
-    printf("updt_chnk_io_map:\n");
-    print_matrix(updt_chnk_io_map, num_disk_stripe, stripe_count);
-#endif
 
     // perform encoding operation 
     int* rs_encoding_matrix;
@@ -2018,13 +1995,6 @@ void system_partial_stripe_writes(int *io_matrix, int *accessed_stripes, int str
             }
         }
 
-        //printf("update data\n");
-
-#if debug
-        printf("updt_chnk_cnt=%d, updt_mrk_stripe:\n", updt_chnk_cnt);
-        print_matrix(updt_mrk_stripe, updt_chnk_cnt, 1);
-#endif
-
         // calculate the parity delta chunks in the memory  
         for(j=0; j<num_disk_stripe; j++){
 
@@ -2070,14 +2040,6 @@ void system_partial_stripe_writes(int *io_matrix, int *accessed_stripes, int str
 
                     // calculate the local parity id 
                     local_prty_id=chunk_id_stripe-erasure_k;
-
-#if debug
-                    printf("local_prty_id=%d\n", local_prty_id);
-                    printf("lp_addr=%p\n", lp_addr);
-                    printf("num_data_chunk_lg=%d, index=%d\n", num_data_chunk_lg, j);
-                    printf("updt_mrk_stripe:\n");
-                    print_matrix(updt_mrk_stripe, updt_chnk_cnt, 1);
-#endif
 
                     temp_cnt=0;
                     for(k=0; k<updt_chnk_cnt; k++){
@@ -3139,15 +3101,6 @@ void dr_io_bso(char *trace_name, char given_timestamp[], int *num_extra_io, doub
                     io_request[j*num_disk_stripe+(temp_chunk_id+rotation)%num_disk_stripe]=1;
 
             }
-
-#if debug
-            printf("stripes_per_timestamp:\n");
-            print_matrix(stripes_per_timestamp, stripe_count, 1);
-            printf("\n");
-            printf("before degraded read:\n");
-            print_matrix(io_request, num_disk_stripe, stripe_count);
-            printf("\n");
-#endif
 
             // perform degraded reads
             degraded_reads(io_request, stripes_per_timestamp, stripe_count, num_disk_stripe);
