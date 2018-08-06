@@ -22,17 +22,18 @@
 #include "Jerasure/reed_sol.h"
 #include "config.h"
 
+/* ================ Fill the information of the files on different disks for testbed evaluations =================*/
+char *disk_array[num_disks]={"/dev/sde","/dev/sdf","/dev/sdg","/dev/sdh","/dev/sdi","/dev/sdj","/dev/sdk","/dev/sdl","/dev/sdm","/dev/sdn",
+	"/dev/sdo","/dev/sdp","/dev/sdq","/dev/sdr", "/dev/sds"};
+/* ===============================================================================================================*/
+
+
 #define talloc(type, num) (type *) malloc(sizeof(type)*(num))
 #define disk_capacity 299 // GB
 #define clean_cache_blk_num 1024*25 // the number of blocks read for cleaning cache in memory
 
 int num_distinct_chunks_timestamp[num_assume_timestamp];
 int poten_crrltd_cnt;
-
-// record the disk identities of a disk array. 
-// You can also specify the directories of the files for simulating parallel reads/writes in this array
-char *disk_array[num_disks]={"/dev/sde","/dev/sdf","/dev/sdg","/dev/sdh","/dev/sdi","/dev/sdj","/dev/sdk","/dev/sdl","/dev/sdm","/dev/sdn",
-	"/dev/sdo","/dev/sdp","/dev/sdq","/dev/sdr", "/dev/sds"};
 
 
 /* This function prints all the elements of a matrix */
@@ -1475,6 +1476,8 @@ void stripe_orgnzt(int* caso_crltd_mtrx, int* caso_crltd_dgr_mtrix, int num_corr
 void caso_stripe_ognztn(char *trace_name,  int *analyze_chunks_time_slots, int *num_chunk_per_timestamp, int bgn_tmstmp_num, int* sort_caso_rcd_pattern, 
         int* sort_caso_rcd_index, int* sort_caso_rcd_freq){
 
+	printf("\n+++++++++ Correlation Analysis and Stripe Organization +++++++++\n");
+
     //read the data from csv file
     FILE *fp;
 
@@ -1706,7 +1709,7 @@ void caso_stripe_ognztn(char *trace_name,  int *analyze_chunks_time_slots, int *
     }
 
     gettimeofday(&end_time, NULL);
-    printf("-correlation_analysis_time=%.6lf\n", end_time.tv_sec-begin_time.tv_sec+(end_time.tv_usec-begin_time.tv_usec)*1.0/1000000);
+    printf("Correlation Identification Time = %lf\n", end_time.tv_sec-begin_time.tv_sec+(end_time.tv_usec-begin_time.tv_usec)*1.0/1000000);
 
     gettimeofday(&begin_time, NULL);
 
@@ -1714,7 +1717,7 @@ void caso_stripe_ognztn(char *trace_name,  int *analyze_chunks_time_slots, int *
     stripe_orgnzt(caso_crltd_mtrx, caso_crltd_dgr_mtrix, num_correlated_chunk, crrltd_chnk_pttn_idx);
 
     gettimeofday(&end_time, NULL);
-    printf("-stripe_organization_time=%.6lf\n", end_time.tv_sec-begin_time.tv_sec+(end_time.tv_usec-begin_time.tv_usec)*1.0/1000000);
+    printf("Correlation Graph Partition Time = %lf\n", end_time.tv_sec-begin_time.tv_sec+(end_time.tv_usec-begin_time.tv_usec)*1.0/1000000);
 
     free(freq_peer_chks);
     free(correlate_chunk_bucket);
@@ -1837,7 +1840,7 @@ void system_partial_stripe_writes(int *io_matrix, int *accessed_stripes, int str
         fd_disk[i]=open64(disk_array[i], O_RDWR | O_DIRECT | O_SYNC);
 
         if(fd_disk[i]<0){
-            printf("openfile failed, i=%d\n",i);
+            printf("ERR: opening file %s fails\n", disk_array[i]);
             exit(1);
         }
     }
@@ -2407,10 +2410,10 @@ int psw_time_caso(char *trace_name, char given_timestamp[], double *time){
 
     //printf("write_count=%d\n", write_count);
     if(strcmp(test_type,"testbed")==0)
-	    printf("caso_parity_update_io=%d, caso_partial_stripe_write_time=%.2lf\n", io_count, *time);
+	    printf("CASO(Parity Update I/O) = %d, CASO(Write Time) = %.2lf\n", io_count, *time);
 
 	else
-		printf("caso_parity_update_io=%d\n", io_count);
+		printf("CASO(Parity Update I/O) = %d\n", io_count);
 		  
 
     fclose(fp);
@@ -2645,10 +2648,10 @@ int psw_time_bso(char *trace_name, char given_timestamp[], double *time){
     io_count+=lg_count*lg_prty_num;
 
     if(strcmp(test_type, "testbed")==0)
-		printf("bso_parity_update_io=%d, bso_partial_stripe_write_time=%.2lf\n", io_count, *time);
+		printf("BSO(Parity Update I/O) = %d, BSO(Write Time) = %.2lf\n", io_count, *time);
 
 	else 
-		printf("bso_parity_update_io=%d\n", io_count);
+		printf("BSO(Parity Update I/O)  = %d\n", io_count);
 
     fclose(fp);
     free(stripes_per_timestamp);
@@ -2930,7 +2933,7 @@ void dr_io_caso(char *trace_name, char given_timestamp[], int *num_extra_io, dou
         }
     }
 
-    printf("caso_addi_io_degraded_reads=%d\n", *num_extra_io);
+    printf("CASO(Addi. I/O of Degraded Reads) = %d\n", *num_extra_io);
 
     fclose(fp);  
     free(stripes_per_timestamp);
@@ -3127,7 +3130,7 @@ void dr_io_bso(char *trace_name, char given_timestamp[], int *num_extra_io, doub
         }
     }
 
-	printf("bso_addi_io_degraded_reads=%d\n", *num_extra_io);
+	printf("BSO(Addi. I/O of Degraded Reads) = %d\n", *num_extra_io);
 
     fclose(fp);
     free(stripes_per_timestamp);

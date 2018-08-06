@@ -21,19 +21,28 @@ int main(int argc, char *argv[]){
 
     int i;
     int count;
+	int ret;
     int begin_timestamp_num;
-    double begin_stripe_ratio; 
+	double analysis_ratio; 
 
     /* ===== initialize the parameters ====== */
-    begin_stripe_ratio=atoi(argv[2])*1.0/100;
+    analysis_ratio=atoi(argv[2])*1.0/100;
     strcpy(code_type, argv[3]);
 	strcpy(test_type, argv[4]);
 
 	if(strcmp(test_type, "testbed")==0){
 
 		char input_info[5];
+		printf("+++++++++ Confirmation before Testbed Evaluation +++++++++\n");
 		printf("Please make sure that you have filled the global disk info in the general.c file. Yes or No?\n");
-		scanf("%s", input_info); 
+		ret=scanf("%s", input_info); 
+
+		if(ret!=1){
+
+			printf("Error: Scanf Funciton!\n");
+			exit(1);
+			
+			}
 
 		if(strcmp(input_info, "No")==0){
 
@@ -65,10 +74,10 @@ int main(int argc, char *argv[]){
     }
 
     if(strcmp(code_type, "rs")==0)
-        printf("\n======== trace=%s, RS(%d,%d) ========\n", argv[1], erasure_k, erasure_m);
+        printf("\n======== trace=%s, RS(%d,%d), Analysis Ratio=%.2lf ========\n", argv[1], erasure_k, erasure_m, analysis_ratio);
 
     else if(strcmp(code_type, "lrc")==0)
-        printf("\n======== trace=%s, LRC(%d,2,%d) ========\n", argv[1], erasure_k, erasure_m);
+        printf("\n======== trace=%s, LRC(%d,2,%d), Analysis Ratio=%.2lf ========\n", argv[1], erasure_k, erasure_m, analysis_ratio);
 
     // initialize the global variables
     memset(access_bucket, -1, sizeof(int)*max_aces_blk_num);
@@ -90,7 +99,7 @@ int main(int argc, char *argv[]){
     }
 
     // based on the analysis ratio, calculate the number of time distance for analysis
-    begin_timestamp_num=begin_stripe_ratio*num_timestamp;
+    begin_timestamp_num=analysis_ratio*num_timestamp;
 
     // determine the begin_timestamp 
     // The requests before the begin time window are used for correlation analysis, while those after the begin time window are used for performance validation 
@@ -137,7 +146,7 @@ int main(int argc, char *argv[]){
     caso_time=&f;
     striping_time=&g; 
 
-    printf("\n+++++++++ partial stripe writes test +++++++++\n");
+    printf("\n+++++++++ Partial Stripe Writes Test +++++++++\n");
     psw_time_caso(argv[1],begin_timestamp, caso_time);
 
     // clean cache to mitigate the impact of cached items in next testbed experiments
@@ -158,9 +167,10 @@ int main(int argc, char *argv[]){
     int d=0;
     striping_num_extra_io=&d;
 
-    printf("\n+++++++++ degraded read test +++++++++\n");
+    printf("\n+++++++++ Degraded Read Test +++++++++\n");
     dr_io_caso(argv[1], begin_timestamp, caso_num_extra_io, caso_time); 
     dr_io_bso(argv[1], begin_timestamp, striping_num_extra_io, striping_time);
+	printf("\n");
 
     free(num_chunk_per_timestamp);
     free(analyze_chunks_time_slots);
