@@ -1,8 +1,0 @@
-echo -e "rsrch2-rs"
-./caso_pw_dr ../msr-traces/rsrch_2.csv 50 rs
-echo -e "rsrch2-lrc"
-./caso_pw_dr ../msr-traces/rsrch_2.csv 50 lrc
-echo -e "wdev0-rs"
-./caso_pw_dr ../msr-traces/wdev_0.csv 50 rs
-echo -e "wdev0-lrc"
-./caso_pw_dr ../msr-traces/wdev_0.csv 50 lrc
