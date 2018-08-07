@@ -907,7 +907,7 @@ void record_access_freq(int bgn_tmstmp_num, int* analyze_chunks_time_slots, int*
     print_matrix(rcd_peer_chks, max_num_peer_chunks, poten_crrltd_cnt);
 #endif
 
-    free(start_search_posi);
+    free(start_search_posi);
 
 }
 
