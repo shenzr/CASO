@@ -21,45 +21,45 @@ int main(int argc, char *argv[]){
 
     int i;
     int count;
-	int ret;
+    int ret;
     int begin_timestamp_num;
-	double analysis_ratio; 
+    double analysis_ratio; 
 
     /* ===== initialize the parameters ====== */
     analysis_ratio=atoi(argv[2])*1.0/100;
     strcpy(code_type, argv[3]);
-	strcpy(test_type, argv[4]);
+    strcpy(test_type, argv[4]);
 
-	if(strcmp(test_type, "testbed")==0){
+    if(strcmp(test_type, "testbed")==0){
 
-		char input_info[5];
-		printf("+++++++++ Confirmation before Testbed Evaluation +++++++++\n");
-		printf("Have you filled the global disk info in the common.h file and the general.c file? Y or N?\n");
-		ret=scanf("%s", input_info); 
+        char input_info[5];
+        printf("+++++++++ Confirmation before Testbed Evaluation +++++++++\n");
+        printf("Have you filled the global disk info in the common.h file and the general.c file? Y or N?\n");
+        ret=scanf("%s", input_info); 
 
-		if(ret!=1){
+        if(ret!=1){
 
-			printf("Error: Scanf Funciton!\n");
-			exit(1);
-			
-			}
+            printf("Error: Scanf Funciton!\n");
+            exit(1);
 
-		if(strcmp(input_info, "N")==0){
+        }
 
-			printf("please fill the **disk array** info in the common.h and the general.c file first before running testbed experiment!\n");
-			exit(1);
+        if(strcmp(input_info, "N")==0){
 
-			}
+            printf("please fill the **disk array** info in the common.h and the general.c file first before running testbed experiment!\n");
+            exit(1);
 
-		else if(strcmp(input_info, "Y")!=0){
+        }
 
-			printf("Please input Y or N!\n");
-			exit(1);
+        else if(strcmp(input_info, "Y")!=0){
 
-			}
+            printf("Please input Y or N!\n");
+            exit(1);
 
-		}
-	
+        }
+
+    }
+
     total_access_chunk_num=0;
     num_timestamp=0;
     max_access_chunks_per_timestamp=-1;
@@ -137,8 +137,8 @@ int main(int argc, char *argv[]){
     }
 
     // organize the data chunks by using CASO only if there exist correlated data chunks
-	if(caso_rcd_idx>0)
-		caso_stripe_ognztn(argv[1], analyze_chunks_time_slots, num_chunk_per_timestamp, begin_timestamp_num, sort_caso_rcd_pattern, sort_caso_rcd_index, sort_caso_rcd_freq);
+    if(caso_rcd_idx>0)
+        caso_stripe_ognztn(argv[1], analyze_chunks_time_slots, num_chunk_per_timestamp, begin_timestamp_num, sort_caso_rcd_pattern, sort_caso_rcd_index, sort_caso_rcd_freq);
 
 
     double *caso_time, *striping_time;
@@ -151,13 +151,13 @@ int main(int argc, char *argv[]){
     psw_time_caso(argv[1],begin_timestamp, caso_time);
 
     // clean cache to mitigate the impact of cached items in next testbed experiments
-	if(strcmp(test_type, "testbed")==0)
-		clean_cache();
-	
+    if(strcmp(test_type, "testbed")==0)
+        clean_cache();
+
     psw_time_bso(argv[1], begin_timestamp, striping_time);
 
-	if(strcmp(test_type, "testbed")==0)
-		clean_cache();
+    if(strcmp(test_type, "testbed")==0)
+        clean_cache();
 
     /* ========== Perform degraded reads ========= */
     int *caso_num_extra_io;
@@ -171,7 +171,7 @@ int main(int argc, char *argv[]){
     printf("\n+++++++++ Degraded Read Test +++++++++\n");
     dr_io_caso(argv[1], begin_timestamp, caso_num_extra_io, caso_time); 
     dr_io_bso(argv[1], begin_timestamp, striping_num_extra_io, striping_time);
-	printf("\n");
+    printf("\n");
 
     free(num_chunk_per_timestamp);
     free(analyze_chunks_time_slots);
