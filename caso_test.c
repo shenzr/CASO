@@ -15,7 +15,7 @@
 int main(int argc, char *argv[]){
 
     if(argc!=5){
-        printf("Please input: ./caso_test trace_name begin_stripe_ratio code_type(rs or lrc) test_type(numeric or testbed)!\n");
+        printf("Please input: ./caso_test trace_name analysis_ratio code_type(rs or lrc) test_type(numeric or testbed)!\n");
         exit(1);
     }
 
@@ -34,7 +34,7 @@ int main(int argc, char *argv[]){
 
 		char input_info[5];
 		printf("+++++++++ Confirmation before Testbed Evaluation +++++++++\n");
-		printf("Please make sure that you have filled the global disk info in the general.c file. Yes or No?\n");
+		printf("Have you filled the global disk info in the common.h file and the general.c file? Y or N?\n");
 		ret=scanf("%s", input_info); 
 
 		if(ret!=1){
@@ -44,16 +44,16 @@ int main(int argc, char *argv[]){
 			
 			}
 
-		if(strcmp(input_info, "No")==0){
+		if(strcmp(input_info, "N")==0){
 
-			printf("please fill the **disk array** info in the general.c file first before running testbed experiment!\n");
+			printf("please fill the **disk array** info in the common.h and the general.c file first before running testbed experiment!\n");
 			exit(1);
 
 			}
 
-		else if(strcmp(input_info, "Yes")!=0){
+		else if(strcmp(input_info, "Y")!=0){
 
-			printf("Please input Yes or No!\n");
+			printf("Please input Y or N!\n");
 			exit(1);
 
 			}

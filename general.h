@@ -25,7 +25,7 @@ extern int psw_time_caso(char *trace_name, char given_timestamp[], double *time)
 
 extern int psw_time_bso(char *trace_name, char given_timestamp[], double *time);
 
-extern void void degraded_reads(int *io_request, int *stripe_id_array, int stripe_count, int num_disk_stripe);
+extern void degraded_reads(int *io_request, int *stripe_id_array, int stripe_count, int num_disk_stripe);
 
 extern void system_parallel_reads(int *io_matrix, int *accessed_stripes, int stripe_count, int *total_write_block_num);
 

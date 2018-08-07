@@ -1,6 +1,9 @@
 #ifndef _COMMON_H
 #define _COMMON_H
 
+
+
+// ======================== Fill the erasure coding parameters ====================
 /* parameters of erasure codes */
 #define erasure_k 4     // the number of data chunks of a stripe in erasure codes
 #define erasure_m 2     // the number of parity chunks of a stripe in erasure codes
@@ -8,10 +11,24 @@
 #define lg_prty_num 1   // the number of local parity in a local group 
 #define erasure_w 8     // the value of w to configure the arthmetic on the finite field 
 #define block_size 4096 // assume that the block size is 4KB
+// =================================================================================
 
+
+
+
+
+
+// ======================== Fill the disk info ======================================
 /* parameters of testbed */ 
 #define num_disks 15    // number of disks used in our testbed experiment. Make sure that num_disks >= erasure_k + erasure_m + num_lg
+// ===================================================================================
 
+
+
+
+
+
+// ======================== Adjust the parameters according to the analysis scale ====================
 /* parameters for data correlation analysis */
 /* Note: we may allocate large arraies based on these global variables, which will consume memory space based on the values 
          of the global variables. We can adjust the analysis granularity (i.e., max_num_peer_chunks and max_num_correlated_chunks_per_chunk) 
@@ -22,6 +39,12 @@
 #define max_num_correlated_chunks_per_chunk 5000  // it defines the maximum number of correlated chunks to a chunk
 #define num_assume_timestamp 1000000              // the maximum number of timestamps assumed in the analysis
 #define tm_dstnc_odr 4                            // it defines the time distance (i.e., four orders of magnitude of the windows filetime) for correlation analysis
+
+// ======================================================================================================
+
+
+
+
 
 /* other macro definitions*/
 #define bucket_depth 2000         
