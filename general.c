@@ -1338,7 +1338,7 @@ void stripe_orgnzt(int* caso_crltd_mtrx, int* caso_crltd_dgr_mtrix, int num_corr
         // find out the first two most correlated data chunks 
         temp_max=-1;
 
-        for(i=0;i<num_correlated_chunk;i++){
+        for(i=0;i<num_correlated_chunk;i++){
 
             //if a correlated chunk is selected, we mark all the values of its row to be -1
             if(if_select_correlated_chunks[i]==1) 
