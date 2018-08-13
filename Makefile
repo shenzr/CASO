@@ -6,9 +6,6 @@ default:
 	@echo "Compile Jerasure"
 	cd $(Jerasure_Dir) && $(MAKE)
 
-	@echo "Compile general.c"
-	$(CC) -c general.c -o general.o $(CFLAGS) 
-
 	@echo "Compile partial_stripe_writes.c"
 	$(CC) -o caso_test caso_test.c general.c $(Jerasure_Dir)/galois.o $(Jerasure_Dir)/reed_sol.o $(Jerasure_Dir)/jerasure.o $(CFLAGS) 
 clean: 
