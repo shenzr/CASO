@@ -29,7 +29,7 @@ int main(int argc, char *argv[]){
     analysis_ratio=atoi(argv[2])*1.0/100;
     strcpy(code_type, argv[3]);
     strcpy(test_type, argv[4]);
-
+/*
     if(strcmp(test_type, "testbed")==0){
 
         char input_info[5];
@@ -59,7 +59,7 @@ int main(int argc, char *argv[]){
         }
 
     }
-
+*/
     total_access_chunk_num=0;
     num_timestamp=0;
     max_access_chunks_per_timestamp=-1;
