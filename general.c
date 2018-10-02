@@ -2231,6 +2231,16 @@ void system_read(int *io_matrix, int *accessed_stripes, int stripe_count){
             print_matrix(accessed_stripes, stripe_count, 1);
         }
     }
+
+    // close the disk files
+    for(i=0; i<num_disk_stripe; i++)
+        close(fd_disk[i]);
+
+    // free the used memory sizes 
+    for(i=0; i<io_index; i++)
+        free((char*)(aio_list[i].aio_buf));
+
+	free(aio_list);
 }
 
 
