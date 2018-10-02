@@ -173,6 +173,13 @@ int main(int argc, char *argv[]){
     dr_io_bso(argv[1], begin_timestamp, striping_num_extra_io, striping_time);
     printf("\n");
 
+    printf("\n+++++++++ Normal Read Test +++++++++\n");
+	*caso_time = 0;
+	*striping_time = 0; 
+    nr_time(argv[1], begin_timestamp, caso_num_extra_io, caso_time, 1); 
+	nr_time(argv[1], begin_timestamp, caso_num_extra_io, striping_time, 0); 
+    printf("\n");
+
     free(num_chunk_per_timestamp);
     free(analyze_chunks_time_slots);
     free(sort_caso_rcd_pattern);

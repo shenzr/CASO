@@ -79,3 +79,4 @@ extern void stripe_orgnzt(int* caso_crltd_mtrx, int* caso_crltd_dgr_mtrix, int n
 
 extern void get_chnk_info(int chunk_id, CHUNK_INFO* chunk_info);
 
+extern void nr_time(char *trace_name, char given_timestamp[], int *num_extra_io, double *time, int flag);

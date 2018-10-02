@@ -2130,6 +2130,110 @@ void system_partial_stripe_writes(int *io_matrix, int *accessed_stripes, int str
 
 }
 
+
+
+/* perform the read operations to a batch of disks */
+// @accessed_stripes: records the involved stripes in a timestamp
+// @stripe_count: records the number of involved stripes in a timestamp
+// @io_matrix: if a chunk is accessed, then the corresponding cell is marked as 1
+void system_read(int *io_matrix, int *accessed_stripes, int stripe_count){
+
+    int i,j;
+    int io_amount;
+    int io_index;
+    int ret;
+    int pagesize;
+    int fd_disk[15];
+    int num_disk_stripe;
+    int disk_id;
+
+    // get the value of num_disk_stripe
+    if(strcmp(code_type, "rs")==0)
+        num_disk_stripe=erasure_k+erasure_m;
+
+    else if (strcmp(code_type, "lrc")==0)
+        num_disk_stripe=erasure_k+erasure_m+num_lg;
+
+    else {
+
+        printf("ERR: num_disk_stripe\n");
+        exit(1);
+
+    }
+
+    pagesize=getpagesize();
+
+    // count the io amount
+    io_amount=calculate_chunk_num_io_matrix(io_matrix, stripe_count, num_disk_stripe);
+
+#if debug
+    printf("\nio_matrix:\n");
+    print_matrix(io_matrix, num_disk_stripe, stripe_count);
+#endif
+
+    // record the start point and end point for each i/o
+    struct aiocb* aio_list = (struct aiocb*)malloc(sizeof(struct aiocb)*io_amount);
+    bzero(aio_list, sizeof (struct aiocb)*io_amount);
+
+    // open the disks 
+    for(i=0; i<num_disk_stripe; i++){
+
+        fd_disk[i]=open64(disk_array[i], O_RDWR | O_DIRECT | O_SYNC);
+
+        if(fd_disk[i]<0){
+            printf("ERR: opening file %s fails\n", disk_array[i]);
+            exit(1);
+        }
+    }
+
+    // initialize the io requests
+    io_index=0;
+    for(j=0; j<stripe_count; j++){
+
+        for(disk_id=0; disk_id<num_disk_stripe; disk_id++){
+
+            // if there is an io request, then initialize the aio_structure
+            if(io_matrix[j*num_disk_stripe+disk_id]>0){
+
+                // initialize the aio info
+                aio_list[io_index].aio_fildes=fd_disk[disk_id];
+                aio_list[io_index].aio_nbytes=block_size;
+
+                // make sure that the offset should not exceed the disk capacity. 
+                aio_list[io_index].aio_offset=1LL;
+                aio_list[io_index].aio_offset=aio_list[io_index].aio_offset*accessed_stripes[j]*block_size; 
+
+                aio_list[io_index].aio_reqprio=0;
+                ret = posix_memalign((void**)&aio_list[io_index].aio_buf, pagesize, block_size);
+				
+                io_index++;
+            }
+        }
+    }
+
+    // perform the read operations
+    for(i=0;i<io_index;i++){
+
+        ret=aio_read(&aio_list[i]);
+        if(ret<0)
+            perror("aio_read");
+    }
+
+    for(i=0;i<io_index;i++){
+
+        while(aio_error(&aio_list[i]) == EINPROGRESS);
+        if((ret = aio_return(&aio_list[i]))==-1){ 
+            printf("io_index=%d, io_amount=%d\n", io_index, io_amount);
+            printf("aio_offset=%lld\n", (long long)aio_list[i].aio_offset);
+            printf("%d-th aio_read_offset=%.2lfMB\n", i, aio_list[i].aio_offset*1.0/1024/1024);
+            printf("aio_read_return error, ret=%d, io_no=%d\n",ret,i);
+            printf("accessed_stripes:\n");
+            print_matrix(accessed_stripes, stripe_count, 1);
+        }
+    }
+}
+
+
 /* initialize the chunk information */
 void get_chnk_info(int chunk_id, CHUNK_INFO* chunk_info){
 
@@ -3208,5 +3312,184 @@ void clean_cache(void){
         free(buffer);
 
     }   
+}
+
+
+/* perform normal reads (no crashes happens) to the data and parity chunks organized by CASO. In the evaluation, different from the partial stripe 
+   writes, read operations usually have high timely requirement. Due to this reason, we peroform a normal read 
+   *immediately* once it has an unavailable data chunk */
+void nr_time(char *trace_name, char given_timestamp[], int *num_extra_io, double *time, int stripe_method){
+
+    //read the data from csv file
+    FILE *fp;
+    if((fp=fopen(trace_name,"r"))==NULL){
+        printf("open file failed\n");
+        exit(1);
+    }
+
+    char operation[100];
+    char orig_timestamp[100];
+    char round_timestamp[100];
+    char workload_name[10];
+    char volumn_id[5];
+    char op_type[10];
+    char offset[20];
+    char size[10];
+    char usetime[10];
+    char divider=',';
+
+    int i,j;
+    int access_start_block, access_end_block;
+    int count;
+    int io_count;
+    int num_disk_stripe;
+    int total_access_stripes;
+    int total_access_correlated_stripes;
+
+    long long *size_int;
+    long long *offset_int;
+    long long a,b;
+    a=0LL;
+    b=0LL;
+    offset_int=&a;
+    size_int=&b;
+    count=0;
+    io_count=0;
+
+    // define the number of disks of a stripe for different codes
+    if(strcmp(code_type, "rs")==0)
+        num_disk_stripe=erasure_k+erasure_m;
+
+    else if(strcmp(code_type, "lrc")==0)
+        num_disk_stripe=erasure_k+lg_prty_num*num_lg+erasure_m;
+
+    else {
+
+        printf("ERR: input code_type\n");
+        exit(1);
+
+    }
+
+    int max_accessed_stripes=max_access_chunks_per_timestamp; 
+    int *stripes_per_timestamp=(int*)malloc(sizeof(int)*max_accessed_stripes);
+    int *io_request=(int*)malloc(sizeof(int)*max_accessed_stripes*num_disk_stripe); // it records the io request in a timestamp
+
+    int stripe_count;
+    int rotation;
+    int flag;
+
+    stripe_count=0;
+    total_access_stripes=0;
+    total_access_correlated_stripes=0;
+
+    CHUNK_INFO* chunk_info=(CHUNK_INFO*)malloc(sizeof(CHUNK_INFO));
+    count=0;
+
+    // reset the pointer for reading the trace 
+    fseek(fp, 0, SEEK_SET);
+    flag=0;
+
+	// time config
+	struct timeval begin_time, end_time;
+
+    // read the trace 
+    while(fgets(operation, sizeof(operation), fp)) {
+
+        // break the operation
+        new_strtok(operation,divider,orig_timestamp);
+        new_strtok(operation,divider,workload_name);
+        new_strtok(operation,divider,volumn_id);
+        new_strtok(operation,divider,op_type);
+        new_strtok(operation,divider,offset);
+        new_strtok(operation,divider,size);
+        new_strtok(operation,divider,usetime);
+
+        process_timestamp(orig_timestamp, round_timestamp);
+
+        // if it has not reached the given_timestamp then continue
+        // we should replay the read operations after correlation analysis
+        if((strcmp(round_timestamp, given_timestamp)!=0) && (flag==0))
+            continue;
+
+        // the evaluation starts
+        flag=1;
+
+        // bypass the write operations
+        if(strcmp(op_type, "Read")!=0)
+            continue;
+
+        trnsfm_char_to_int(offset, offset_int);
+        trnsfm_char_to_int(size, size_int);
+        access_start_block=(*offset_int)/block_size;
+        access_end_block=(*offset_int+*size_int-1)/block_size;
+
+        // we issue each degraded read request immediately and initialize the io_request array
+        memset(io_request, 0, sizeof(int)*max_accessed_stripes*num_disk_stripe);
+        memset(stripes_per_timestamp, 0, sizeof(int)*max_accessed_stripes);
+
+        // update io_request
+        stripe_count=0;
+
+        // scan each chunk and generate the io matrix 
+        for(i=access_start_block; i<=access_end_block; i++){
+
+            // get the stripe id of the read data 
+            memset(chunk_info, 0, sizeof(CHUNK_INFO));
+
+			if(stripe_method == 1)
+                get_chnk_info(i, chunk_info); 
+
+			else if(stripe_method == 0){
+				chunk_info->stripe_id = i/erasure_k;
+				chunk_info->chunk_id_in_stripe = i%erasure_k; 
+			}
+			
+            rotation=chunk_info->stripe_id%num_disk_stripe; 
+
+            for(j=0; j<stripe_count; j++)
+                if(stripes_per_timestamp[j]==chunk_info->stripe_id)
+                    break;
+
+            if(j>=stripe_count){
+                stripes_per_timestamp[stripe_count]=chunk_info->stripe_id;
+                stripe_count++;
+            }
+
+            // if the data is on the failed disk 
+            int temp_chunk_id=(chunk_info->chunk_id_in_stripe+rotation)%num_disk_stripe;
+
+            io_request[j*num_disk_stripe+temp_chunk_id]=1;
+
+        }
+
+        // check the access stripes
+        for(i=0; i<stripe_count; i++)
+            if(stripes_per_timestamp[i]<ognz_crrltd_cnt/erasure_k)
+                total_access_correlated_stripes++;
+
+        total_access_stripes+=stripe_count;      
+        io_count+=calculate_num_io(io_request, stripe_count, num_disk_stripe);
+
+        // perform system read
+        gettimeofday(&begin_time, NULL);
+        system_read(io_request, stripes_per_timestamp, stripe_count);
+		gettimeofday(&end_time, NULL);
+		*time+=end_time.tv_sec-begin_time.tv_sec+(end_time.tv_usec-begin_time.tv_usec)*1.0/1000000;
+
+        count++;
+
+    }
+
+    if(stripe_method == 1)
+		printf("CASO_Normal_Read_Time = %.2lf\n", *time);
+
+	else if (stripe_method == 0)
+		printf("BSO_Normal_Read_Time = %.2lf\n", *time);
+
+    fclose(fp);  
+    free(stripes_per_timestamp);
+    free(io_request);
+    free(chunk_info);
+
 }
 
