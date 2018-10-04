@@ -3328,7 +3328,7 @@ void clean_cache(void){
 /* perform normal reads (no crashes happens) to the data and parity chunks organized by CASO. In the evaluation, different from the partial stripe 
    writes, read operations usually have high timely requirement. Due to this reason, we peroform a normal read 
    *immediately* once it has an unavailable data chunk */
-void nr_time(char *trace_name, char given_timestamp[], int *num_extra_io, double *time, int stripe_method){
+void nr_time(char *trace_name, char given_timestamp[], double *time, int stripe_method){
 
     //read the data from csv file
     FILE *fp;
@@ -3379,7 +3379,7 @@ void nr_time(char *trace_name, char given_timestamp[], int *num_extra_io, double
         exit(1);
 
     }
-
+    
     int max_accessed_stripes=max_access_chunks_per_timestamp; 
     int *stripes_per_timestamp=(int*)malloc(sizeof(int)*max_accessed_stripes);
     int *io_request=(int*)malloc(sizeof(int)*max_accessed_stripes*num_disk_stripe); // it records the io request in a timestamp
@@ -3446,12 +3446,12 @@ void nr_time(char *trace_name, char given_timestamp[], int *num_extra_io, double
             // get the stripe id of the read data 
             memset(chunk_info, 0, sizeof(CHUNK_INFO));
 
-			if(stripe_method == 1)
+	    if(stripe_method == 1)
                 get_chnk_info(i, chunk_info); 
 
-			else if(stripe_method == 0){
-				chunk_info->stripe_id = i/erasure_k;
-				chunk_info->chunk_id_in_stripe = i%erasure_k; 
+	    else if(stripe_method == 0){
+		chunk_info->stripe_id = i/erasure_k;
+		chunk_info->chunk_id_in_stripe = i%erasure_k; 
 			}
 			
             rotation=chunk_info->stripe_id%num_disk_stripe; 
@@ -3478,23 +3478,25 @@ void nr_time(char *trace_name, char given_timestamp[], int *num_extra_io, double
                 total_access_correlated_stripes++;
 
         total_access_stripes+=stripe_count;      
-        io_count+=calculate_num_io(io_request, stripe_count, num_disk_stripe);
+        io_count+=access_end_block-access_start_block+1;
 
         // perform system read
         gettimeofday(&begin_time, NULL);
         system_read(io_request, stripes_per_timestamp, stripe_count);
-		gettimeofday(&end_time, NULL);
-		*time+=end_time.tv_sec-begin_time.tv_sec+(end_time.tv_usec-begin_time.tv_usec)*1.0/1000000;
+        gettimeofday(&end_time, NULL);
+	*time+=end_time.tv_sec-begin_time.tv_sec+(end_time.tv_usec-begin_time.tv_usec)*1.0/1000000;
 
         count++;
 
     }
 
     if(stripe_method == 1)
-		printf("CASO_Normal_Read_Time = %.2lf\n", *time);
+	printf("CASO_Aver_ReadReq_Time = %.4lf\n", *time/count);
 
-	else if (stripe_method == 0)
-		printf("BSO_Normal_Read_Time = %.2lf\n", *time);
+    else if (stripe_method == 0)
+	printf("BSO_Normal_ReadReq_Time = %.4lf\n", *time/count);
+
+    printf("aver_io_size=%.2lf\n", io_count*1.0/count);
 
     fclose(fp);  
     free(stripes_per_timestamp);

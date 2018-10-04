@@ -146,7 +146,7 @@ int main(int argc, char *argv[]){
 
     caso_time=&f;
     striping_time=&g; 
-
+/*
     printf("\n+++++++++ Partial Stripe Writes Test +++++++++\n");
     psw_time_caso(argv[1],begin_timestamp, caso_time);
 
@@ -158,8 +158,9 @@ int main(int argc, char *argv[]){
 
     if(strcmp(test_type, "testbed")==0)
         clean_cache();
-
+*/
     /* ========== Perform degraded reads ========= */
+ /*
     int *caso_num_extra_io;
     int c=0;
     caso_num_extra_io=&c;
@@ -172,12 +173,20 @@ int main(int argc, char *argv[]){
     dr_io_caso(argv[1], begin_timestamp, caso_num_extra_io, caso_time); 
     dr_io_bso(argv[1], begin_timestamp, striping_num_extra_io, striping_time);
     printf("\n");
-
+*/
     printf("\n+++++++++ Normal Read Test +++++++++\n");
-	*caso_time = 0;
-	*striping_time = 0; 
-    nr_time(argv[1], begin_timestamp, caso_num_extra_io, caso_time, 1); 
-	nr_time(argv[1], begin_timestamp, caso_num_extra_io, striping_time, 0); 
+    *caso_time = 0;
+    *striping_time = 0; 
+    
+    if(strcmp(test_type, "testbed")==0)
+        clean_cache();
+    
+    nr_time(argv[1], begin_timestamp, caso_time, 1);  
+    
+    if(strcmp(test_type, "testbed")==0)
+        clean_cache();
+    
+    nr_time(argv[1], begin_timestamp, striping_time, 0); 
     printf("\n");
 
     free(num_chunk_per_timestamp);
