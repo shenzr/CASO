@@ -20,7 +20,6 @@ int main(int argc, char *argv[]){
     }
 
     int i;
-    int count;
     int ret;
     int begin_timestamp_num;
     double analysis_ratio; 
@@ -29,7 +28,7 @@ int main(int argc, char *argv[]){
     analysis_ratio=atoi(argv[2])*1.0/100;
     strcpy(code_type, argv[3]);
     strcpy(test_type, argv[4]);
-/*
+
     if(strcmp(test_type, "testbed")==0){
 
         char input_info[5];
@@ -59,7 +58,7 @@ int main(int argc, char *argv[]){
         }
 
     }
-*/
+
     total_access_chunk_num=0;
     num_timestamp=0;
     max_access_chunks_per_timestamp=-1;
@@ -89,14 +88,13 @@ int main(int argc, char *argv[]){
     calculate_chunk_num(argv[1]);
 
     // calculate the number of data chunks which are accessed no less than twice during the trace 
-    int count_larger_2=0;
-    count=0;
-    for(i=0;i<cur_rcd_idx;i++){
-        if(freq_access_chunk[i]>=2){
-            count++;
-            count_larger_2+=freq_access_chunk[i];
-        }
-    }
+	int count_larger_1=0;
+    for(i=0;i<cur_rcd_idx;i++)
+		if(freq_access_chunk[i]>=1)
+			count_larger_1+=freq_access_chunk[i];
+
+    // printf("num_distinct_chnk = %d\n", cur_rcd_idx);
+	// printf("count_larger_1 = %d\n", count_larger_1);
 
     // based on the analysis ratio, calculate the number of time distance for analysis
     begin_timestamp_num=analysis_ratio*num_timestamp;
@@ -105,12 +103,6 @@ int main(int argc, char *argv[]){
     // The requests before the begin time window are used for correlation analysis, while those after the begin time window are used for performance validation 
     char begin_timestamp[100];
     determine_begin_timestamp(argv[1], begin_timestamp, begin_timestamp_num);
-
-    // calculate the number of chunks which are used for analysis and are accessed no less than twice during the correlation analysis
-    count=0;
-    for(i=0; i<caso_rcd_idx; i++)
-        if(freq_access_chunk[i]>=2)
-            count++;
 
     int* analyze_chunks_time_slots=(int*)malloc(sizeof(int)*begin_timestamp_num*max_access_chunks_per_timestamp);   // it records  all the accessed blocks at every time windows for correlation analysis
     int* access_time_slots_index=(int*)malloc(sizeof(int)*begin_timestamp_num*max_access_chunks_per_timestamp);     // it records the index of each chunk of total_access in the trace_access_pattern
@@ -146,7 +138,7 @@ int main(int argc, char *argv[]){
 
     caso_time=&f;
     striping_time=&g; 
-/*
+
     printf("\n+++++++++ Partial Stripe Writes Test +++++++++\n");
     psw_time_caso(argv[1],begin_timestamp, caso_time);
 
@@ -158,9 +150,9 @@ int main(int argc, char *argv[]){
 
     if(strcmp(test_type, "testbed")==0)
         clean_cache();
-*/
+
     /* ========== Perform degraded reads ========= */
- /*
+	
     int *caso_num_extra_io;
     int c=0;
     caso_num_extra_io=&c;
@@ -173,7 +165,7 @@ int main(int argc, char *argv[]){
     dr_io_caso(argv[1], begin_timestamp, caso_num_extra_io, caso_time); 
     dr_io_bso(argv[1], begin_timestamp, striping_num_extra_io, striping_time);
     printf("\n");
-*/
+
     printf("\n+++++++++ Normal Read Test +++++++++\n");
     *caso_time = 0;
     *striping_time = 0; 

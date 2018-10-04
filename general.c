@@ -1695,7 +1695,6 @@ void caso_stripe_ognztn(char *trace_name,  int *analyze_chunks_time_slots, int *
                 temp_chunk=rcd_peer_chks[i*max_num_peer_chunks+j];
                 insert_chunk_into_bucket(correlate_chunk_bucket, bucket_num, temp_chunk);
                 flag=1;
-
             }
 
             if(freq_peer_chks[i*max_num_peer_chunks+j]>=1)
@@ -1718,11 +1717,25 @@ void caso_stripe_ognztn(char *trace_name,  int *analyze_chunks_time_slots, int *
     }
 
     //count the correlated data chunks
+    int freq_correlated_chunk; 
+	
+	freq_correlated_chunk=0;
     num_correlated_chunk=0;
     cell_num=bucket_depth*bucket_num;
+	
     for(i=0; i<cell_num; i++)
-        if(correlate_chunk_bucket[i]!=-1)
+        if(correlate_chunk_bucket[i]!=-1){
+			
             num_correlated_chunk++;
+
+			// find the sorted index and update the freq
+			sort_index = binary_search(sort_caso_rcd_pattern, caso_rcd_idx, correlate_chunk_bucket[i]);
+			freq_correlated_chunk += sort_caso_rcd_freq[sort_index];
+			
+        	}
+
+	// printf("num_correlated_chunk = %d\n", num_correlated_chunk);
+	// printf("freq_correlated_chunk = %d\n", freq_correlated_chunk);
 
     //construct caso_crltd_mtrx, caso_crltd_dgr_mtrx
     int* caso_crltd_mtrx=(int*)malloc(sizeof(int)*num_correlated_chunk*max_num_correlated_chunks_per_chunk); // it records the correlated chunks of each chunk 
@@ -3481,10 +3494,12 @@ void nr_time(char *trace_name, char given_timestamp[], double *time, int stripe_
         io_count+=access_end_block-access_start_block+1;
 
         // perform system read
-        gettimeofday(&begin_time, NULL);
-        system_read(io_request, stripes_per_timestamp, stripe_count);
-        gettimeofday(&end_time, NULL);
-	*time+=end_time.tv_sec-begin_time.tv_sec+(end_time.tv_usec-begin_time.tv_usec)*1.0/1000000;
+        if(strcmp(test_type, "testbed")==0){
+        	gettimeofday(&begin_time, NULL);
+        	system_read(io_request, stripes_per_timestamp, stripe_count);
+        	gettimeofday(&end_time, NULL);
+			*time+=end_time.tv_sec-begin_time.tv_sec+(end_time.tv_usec-begin_time.tv_usec)*1.0/1000000;
+        }
 
         count++;
 
@@ -3496,7 +3511,7 @@ void nr_time(char *trace_name, char given_timestamp[], double *time, int stripe_
     else if (stripe_method == 0)
 	printf("BSO_Normal_ReadReq_Time = %.4lf\n", *time/count);
 
-    printf("aver_io_size=%.2lf\n", io_count*1.0/count);
+    // printf("aver_io_size=%.2lf\n", io_count*1.0/count);
 
     fclose(fp);  
     free(stripes_per_timestamp);
