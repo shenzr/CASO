@@ -2298,7 +2298,7 @@ void get_chnk_info(int chunk_id, CHUNK_INFO* chunk_info){
     // if the chunk is a uncorrelated data chunk, then we can quickly determine its stripe id and other metadata info
     else {
 
-        chunk_info->stripe_id=(chunk_id - si->num_crrltd_chnk_bf_chnk_id)/erasure_k;
+        chunk_info->stripe_id=(chunk_id - si->num_crrltd_chnk_bf_chnk_id)/erasure_k + ognz_crrltd_cnt/erasure_k;
         chunk_info->chunk_id_in_stripe=(chunk_id - si->num_crrltd_chnk_bf_chnk_id)%erasure_k;
         chunk_info->lg_id=chunk_info->chunk_id_in_stripe/num_chunk_per_lg;
 
@@ -2317,7 +2317,7 @@ void get_chnk_info(int chunk_id, CHUNK_INFO* chunk_info){
     printf("chunk_info->lg_id=%d\n", chunk_info->lg_id);
     printf("\n");
 #endif
-
+    
     free(si);
 
 }
